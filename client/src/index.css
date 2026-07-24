@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 13%;
+  --primary: 22 91% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 0 0% 13%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 22 91% 54%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 22 91% 54%;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+@media print {
+  @page {
+    margin: 1.2cm;
+  }
+
+  /* Ocultar navegación y mostrar solo contenido */
+  nav, aside, header.app-header, .sidebar, [data-sidebar] {
+    display: none !important;
+  }
+
+  /* Header con logo solo para impresión */
+  .print-logo-header {
+    display: flex !important;
+    justify-content: center;
+    padding-bottom: 1.2cm;
+    margin-bottom: 0.6cm;
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
+/* Ocultar en pantalla, mostrar solo al imprimir */
+.print-logo-header {
+  display: none;
+}
