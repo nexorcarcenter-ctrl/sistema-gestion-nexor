@@ -4,8 +4,7 @@ import User from "@/entities/User";
 
 
 export default function Login() {
-  const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ username: "", password: "", fullName: "", cargo: "otro" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -15,11 +14,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      if (mode === "login") {
-        await User.login(form.username, form.password);
-      } else {
-        await User.register(form.username, form.password, form.fullName, form.cargo);
-      }
+      await User.login(form.username, form.password);
       window.location.href = "/";
     } catch (err) {
       setError(err.message);
@@ -38,7 +33,7 @@ export default function Login() {
 
         <div className="bg-white rounded-xl p-6 shadow-xl">
           <h2 className="font-semibold text-lg mb-4" style={{ color: "#0D0D0F" }}>
-            {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+            Iniciar sesión
           </h2>
 
           {error && (
@@ -46,28 +41,6 @@ export default function Login() {
           )}
 
           <form onSubmit={handle} className="space-y-3">
-            {mode === "register" && (
-              <>
-                <input
-                  type="text"
-                  placeholder="Nombre completo"
-                  value={form.fullName}
-                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                  style={{ "--tw-ring-color": "#E8461E" }}
-                />
-                <select
-                  value={form.cargo}
-                  onChange={(e) => setForm({ ...form, cargo: e.target.value })}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                >
-                  <option value="admin">Administrador</option>
-                  <option value="recepcionista">Recepcionista</option>
-                  <option value="mecanico">Mecánico</option>
-                  <option value="otro">Otro</option>
-                </select>
-              </>
-            )}
             <input
               type="text"
               placeholder="Usuario"
@@ -101,20 +74,9 @@ export default function Login() {
               onMouseOver={e => e.currentTarget.style.backgroundColor = "#c73a15"}
               onMouseOut={e => e.currentTarget.style.backgroundColor = "#E8461E"}
             >
-              {loading ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}
+              {loading ? "Cargando..." : "Entrar"}
             </button>
           </form>
-
-          <p className="text-center text-xs text-slate-500 mt-4">
-            {mode === "login" ? "¿No tenés cuenta?" : "¿Ya tenés cuenta?"}{" "}
-            <button
-              onClick={() => setMode(mode === "login" ? "register" : "login")}
-              className="font-medium hover:underline"
-              style={{ color: "#E8461E" }}
-            >
-              {mode === "login" ? "Registrarse" : "Iniciar sesión"}
-            </button>
-          </p>
         </div>
       </div>
     </div>

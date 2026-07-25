@@ -1,6 +1,19 @@
 const router = require("express").Router();
 const pool = require("../db");
 
+// Tablas que solo un admin puede modificar (write/delete)
+const ADMIN_ONLY_WRITE = new Set([
+  "cash_registers", "payment_methods", "service_types", "categories"
+]);
+
+function requireAdminForWrite(req, res, next) {
+  const table = getTable(req.params.entity);
+  if (ADMIN_ONLY_WRITE.has(table) && req.user?.role !== "admin") {
+    return res.status(403).json({ error: "Acceso restringido a administradores" });
+  }
+  next();
+}
+
 // Map entity names to table names
 const ENTITY_TABLES = {
   appointments: "appointments",
@@ -25,13 +38,49 @@ function getTable(entity) {
   return ENTITY_TABLES[entity];
 }
 
+// Whitelist de columnas válidas por tabla (previene SQL injection)
+const VALID_COLUMNS = new Set([
+  "id", "name", "email", "username", "full_name", "cargo", "role", "is_active",
+  "status", "sku", "barcode", "description", "category", "unit_price", "cost_price",
+  "stock_quantity", "min_stock", "max_stock", "supplier_id", "supplier_name",
+  "unit", "tax_rate", "image_url", "location", "volume_discounts", "car_brand",
+  "car_model", "car_year", "brand", "model", "year", "color", "plate", "vin",
+  "mileage", "fuel_type", "transmission", "engine_cc", "doors", "body_type",
+  "condition", "purchase_price", "sale_price", "features", "notes", "entry_date",
+  "customer_name", "customer_phone", "car_plate", "car_color", "car_mileage",
+  "delivery_date", "services", "total_sale", "total_cost", "profit",
+  "payment_status", "paid_amount", "sale_id", "sale_number", "order_number",
+  "inspection_data", "inspection_status", "appointment_time", "inspection_observations",
+  "car_mileage_exit", "exit_inspection_data", "exit_inspection_status", "exit_observations",
+  "po_number", "order_date", "expected_date", "received_date", "items_json",
+  "items_count", "subtotal", "tax_amount", "shipping_cost", "total", "shipping_cost",
+  "contact_name", "phone", "address", "city", "country", "tax_id", "payment_terms",
+  "total_orders", "total_spent", "rating", "currency", "type", "sort_order",
+  "date", "time", "service_description", "opened_at", "closed_at",
+  "petty_cash_uyu", "petty_cash_usd", "opening_balance_uyu", "opening_balance_usd",
+  "closing_balance_uyu", "closing_balance_usd", "difference_uyu", "difference_usd",
+  "total_uyu", "total_usd", "opened_by", "closed_by",
+  "sale_date", "sale_type", "service_order_id", "service_order_number",
+  "vehicle", "payments_json", "discount_amount", "cash_register_id", "cashier",
+  "amount", "payment_method", "exchange_rate", "amount_uyu_equivalent", "paid_at",
+  "remito_number", "items", "issued_by", "concept", "moved_at", "created_by",
+  "models_json", "name_es", "icon", "parent_id", "product_count",
+  "product_id", "product_name", "movement_type", "quantity", "previous_stock",
+  "new_stock", "unit_cost", "reference_type", "reference_number", "reason",
+  "created_at", "updated_at", "pin_hash"
+]);
+
+function isValidColumn(col) {
+  return VALID_COLUMNS.has(col);
+}
+
 // Parse sort: "-createdAt" → ORDER BY created_at DESC
 function parseSort(sort) {
   if (!sort) return "created_at DESC";
   const desc = sort.startsWith("-");
   const field = sort.replace(/^-/, "");
-  // camelCase to snake_case
   const col = field.replace(/([A-Z])/g, "_$1").toLowerCase();
+  if (!isValidColumn(col)) return "created_at DESC";
   return `${col} ${desc ? "DESC" : "ASC"}`;
 }
 
@@ -50,6 +99,7 @@ router.get("/:entity", async (req, res) => {
     let idx = 1;
     for (const [key, val] of Object.entries(filters)) {
       const col = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+      if (!isValidColumn(col)) continue;
       conditions.push(`${col} = $${idx++}`);
       values.push(val);
     }
@@ -80,7 +130,7 @@ router.get("/:entity/:id", async (req, res) => {
 });
 
 // Create
-router.post("/:entity", async (req, res) => {
+router.post("/:entity", requireAdminForWrite, async (req, res) => {
   try {
     const table = getTable(req.params.entity);
     if (!table) return res.status(404).json({ error: "Entity not found" });
@@ -103,7 +153,7 @@ router.post("/:entity", async (req, res) => {
 });
 
 // Bulk create
-router.post("/:entity/bulk", async (req, res) => {
+router.post("/:entity/bulk", requireAdminForWrite, async (req, res) => {
   try {
     const table = getTable(req.params.entity);
     if (!table) return res.status(404).json({ error: "Entity not found" });
@@ -129,7 +179,7 @@ router.post("/:entity/bulk", async (req, res) => {
 });
 
 // Update
-router.put("/:entity/:id", async (req, res) => {
+router.put("/:entity/:id", requireAdminForWrite, async (req, res) => {
   try {
     const table = getTable(req.params.entity);
     if (!table) return res.status(404).json({ error: "Entity not found" });
@@ -151,8 +201,11 @@ router.put("/:entity/:id", async (req, res) => {
   }
 });
 
-// Delete
-router.delete("/:entity/:id", async (req, res) => {
+// Delete — solo admin puede eliminar registros
+router.delete("/:entity/:id", (req, res, next) => {
+  if (req.user?.role !== "admin") return res.status(403).json({ error: "Solo administradores pueden eliminar registros" });
+  next();
+}, async (req, res) => {
   try {
     const table = getTable(req.params.entity);
     if (!table) return res.status(404).json({ error: "Entity not found" });
@@ -168,6 +221,7 @@ function toSnake(obj) {
   const result = {};
   for (const [k, v] of Object.entries(obj)) {
     const col = k.replace(/([A-Z])/g, "_$1").toLowerCase();
+    if (!isValidColumn(col)) continue;
     result[col] = v;
   }
   return result;
