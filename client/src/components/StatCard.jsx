@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function StatCard({ title, value, subtitle, icon: Icon, trend, color = "text-orange-600", bgColor = "bg-orange-50" }) {
+export default function StatCard({ title, value, subtitle, icon: Icon, trend, color = "text-[#E8461E]", bgColor = "bg-[#E8461E]/5" }) {
   return (
     <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-5">

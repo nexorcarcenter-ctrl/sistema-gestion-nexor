@@ -24,7 +24,7 @@ export default function PODetailSidebar({ order }) {
           <div className="flex justify-between text-sm"><span className="text-slate-500">{t("subtotal")}</span><span>{fmt(order.subtotal)}</span></div>
           <div className="flex justify-between text-sm"><span className="text-slate-500">{t("tax")}</span><span>{fmt(order.tax_amount)}</span></div>
           {order.shipping_cost > 0 && <div className="flex justify-between text-sm"><span className="text-slate-500">{t("shipping")}</span><span>{fmt(order.shipping_cost)}</span></div>}
-          <div className="flex justify-between text-lg font-bold border-t pt-3"><span>{t("total")}</span><span className="text-orange-600">{fmt(order.total)}</span></div>
+          <div className="flex justify-between text-lg font-bold border-t pt-3"><span>{t("total")}</span><span className="text-[#E8461E]">{fmt(order.total)}</span></div>
         </CardContent>
       </Card>
     </div>

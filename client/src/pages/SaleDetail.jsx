@@ -18,7 +18,7 @@ export default function SaleDetail() {
   const saleId = urlParams.get("id");
 
   const { data: sale, isLoading } = useQuery({ queryKey: ["sale", saleId], queryFn: () => Sale.get(saleId), enabled: !!saleId });
-  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" /></div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" /></div>;
   if (!sale) return <div className="text-center py-12"><p className="text-slate-500">{t("saleNotFound")}</p></div>;
 
   const items = (() => { try { return JSON.parse(sale.items_json || "[]"); } catch { return []; } })();
@@ -45,7 +45,7 @@ export default function SaleDetail() {
               <div className="flex justify-between text-sm"><span className="text-slate-500">{t("subtotal")}</span><span>{fmt(sale.subtotal)}</span></div>
               <div className="flex justify-between text-sm"><span className="text-slate-500">{t("tax")}</span><span>{fmt(sale.tax_amount)}</span></div>
               {sale.discount_amount > 0 && <div className="flex justify-between text-sm text-red-600"><span>{t("discount")}</span><span>-{fmt(sale.discount_amount)}</span></div>}
-              <div className="flex justify-between text-lg font-bold border-t pt-3"><span>{t("total")}</span><span className="text-orange-600">{fmt(sale.total)}</span></div>
+              <div className="flex justify-between text-lg font-bold border-t pt-3"><span>{t("total")}</span><span className="text-[#E8461E]">{fmt(sale.total)}</span></div>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm">

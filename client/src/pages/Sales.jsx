@@ -77,7 +77,7 @@ export default function Sales() {
 
   if (loadingSales) return (
     <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" />
     </div>
   );
 
@@ -93,7 +93,7 @@ export default function Sales() {
           <Button variant="outline" size="sm" onClick={() => navigate(createPageUrl("ServiceOrders"))}>
             <Wrench className="h-4 w-4 mr-1.5" />Nueva Orden
           </Button>
-          <Button size="sm" className="bg-orange-600 hover:bg-orange-700" onClick={() => navigate(createPageUrl("NewSale"))}>
+          <Button size="sm" className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => navigate(createPageUrl("NewSale"))}>
             <Plus className="h-4 w-4 mr-1.5" />Venta Directa
           </Button>
         </div>
@@ -119,7 +119,7 @@ export default function Sales() {
               onClick={() => setDateFilter(f.key)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 dateFilter === f.key
-                  ? "bg-orange-600 text-white"
+                  ? "bg-[#E8461E] text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -136,7 +136,7 @@ export default function Sales() {
               onClick={() => setTypeFilter(key)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 typeFilter === key
-                  ? "bg-orange-600 text-white"
+                  ? "bg-[#E8461E] text-white"
                   : "text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -195,7 +195,7 @@ export default function Sales() {
                         key={sale.id}
                         className={`border-b border-slate-100 cursor-pointer transition-colors ${
                           idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"
-                        } hover:bg-orange-50/40`}
+                        } hover:bg-[#E8461E]/5/40`}
                         onClick={() => setExpandedRow(isExpanded ? null : sale.id)}
                       >
                         <td className="px-3 py-2 text-slate-600 whitespace-nowrap text-xs">{fmtDate(sale.sale_date || sale.createdAt)}</td>
@@ -203,7 +203,7 @@ export default function Sales() {
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-slate-800">{sale.sale_number}</span>
                             {sale.sale_type === "with_service" && (
-                              <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full font-medium">Servicio</span>
+                              <span className="text-[10px] bg-[#E8461E]/10 text-[#c73a15] px-1.5 py-0.5 rounded-full font-medium">Servicio</span>
                             )}
                           </div>
                           {sale.service_order_number && (
@@ -235,13 +235,13 @@ export default function Sales() {
                         </td>
                       </tr>
                       {isExpanded && items.length > 0 && (
-                        <tr key={`${sale.id}-detail`} className="bg-orange-50/60 border-b border-orange-100">
+                        <tr key={`${sale.id}-detail`} className="bg-[#E8461E]/5/60 border-b border-[#E8461E]/10">
                           <td colSpan={7 + paymentMethods.length} className="px-6 py-3">
                             <div className="text-xs text-slate-600">
                               <p className="font-semibold text-slate-700 mb-2">Detalle de ítems:</p>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 {items.map((item, i) => (
-                                  <div key={i} className="bg-white rounded-lg px-3 py-2 border border-orange-100">
+                                  <div key={i} className="bg-white rounded-lg px-3 py-2 border border-[#E8461E]/10">
                                     <p className="font-medium text-slate-700">{item.product_name}</p>
                                     <p className="text-slate-500">x{item.quantity} · {fmtUYU(item.unit_price)}</p>
                                   </div>

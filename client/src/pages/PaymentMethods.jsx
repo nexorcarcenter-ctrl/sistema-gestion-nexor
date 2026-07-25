@@ -12,7 +12,7 @@ const TYPE_CONFIG = {
   cash:     { label: "Efectivo",        icon: Banknote,        color: "text-green-600 bg-green-50" },
   card:     { label: "Tarjeta",         icon: CreditCard,      color: "text-blue-600 bg-blue-50" },
   transfer: { label: "Transferencia",   icon: ArrowLeftRight,  color: "text-purple-600 bg-purple-50" },
-  check:    { label: "Cheque",          icon: FileCheck,       color: "text-orange-600 bg-orange-50" },
+  check:    { label: "Cheque",          icon: FileCheck,       color: "text-[#E8461E] bg-[#E8461E]/5" },
   other:    { label: "Otro",            icon: MoreHorizontal,  color: "text-slate-600 bg-slate-50" },
 };
 

@@ -65,7 +65,7 @@ export default function Cars() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" />
     </div>
   );
 
@@ -77,7 +77,7 @@ export default function Cars() {
           <h1 className="text-2xl font-bold text-slate-900">{t("cars")}</h1>
           <p className="text-sm text-slate-500 mt-0.5">{t("carsSubtitle")}</p>
         </div>
-        <Button className="bg-orange-600 hover:bg-orange-700" onClick={openNew}>
+        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={openNew}>
           <Plus className="h-4 w-4 mr-2" />{t("addCar")}
         </Button>
       </div>
@@ -106,7 +106,7 @@ export default function Cars() {
         <div className="flex gap-1">
           {["all", "available", "reserved", "sold", "in_repair"].map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${statusFilter === s ? "bg-orange-600 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${statusFilter === s ? "bg-[#E8461E] text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>
               {s === "all" ? t("all") : t("carStatus_" + s)}
             </button>
           ))}
@@ -118,7 +118,7 @@ export default function Cars() {
         <div className="text-center py-16 bg-white rounded-lg">
           <CarIcon className="h-12 w-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500">{t("noCarsFound")}</p>
-          <Button className="mt-4 bg-orange-600 hover:bg-orange-700" onClick={openNew}>
+          <Button className="mt-4 bg-[#E8461E] hover:bg-[#c73a15]" onClick={openNew}>
             <Plus className="h-4 w-4 mr-2" />{t("addCar")}
           </Button>
         </div>
@@ -158,7 +158,7 @@ export default function Cars() {
                 <div className="flex items-center justify-between pt-1 border-t border-slate-100">
                   <div>
                     <p className="text-xs text-slate-400">{t("carSalePrice")}</p>
-                    <p className="text-lg font-bold text-orange-700">
+                    <p className="text-lg font-bold text-[#c73a15]">
                       {car.sale_price ? `$${Number(car.sale_price).toLocaleString()}` : "—"}
                     </p>
                   </div>

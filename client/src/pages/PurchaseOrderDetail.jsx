@@ -48,7 +48,7 @@ export default function PurchaseOrderDetail() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["purchase-order", orderId] }); queryClient.invalidateQueries({ queryKey: ["purchase-orders"] }); queryClient.invalidateQueries({ queryKey: ["products"] }); queryClient.invalidateQueries({ queryKey: ["stock-movements"] }); },
   });
 
-  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" /></div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" /></div>;
   if (!order) return <div className="text-center py-12"><p className="text-slate-500">{t("orderNotFound")}</p></div>;
   const items = (() => { try { return JSON.parse(order.items_json || "[]"); } catch { return []; } })();
 
@@ -62,7 +62,7 @@ export default function PurchaseOrderDetail() {
         </div>
         {order.status === "draft" && <Button variant="outline" className="text-red-600" onClick={() => deleteMutation.mutate()}><Trash2 className="h-4 w-4 mr-2" />{t("delete")}</Button>}
         {order.status === "draft" && <Button variant="outline" onClick={() => updateMutation.mutate({ status: "sent" })}><Send className="h-4 w-4 mr-2" />{t("sendOrder")}</Button>}
-        {["sent", "confirmed"].includes(order.status) && <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => receiveMutation.mutate()} disabled={receiveMutation.isPending}><CheckCircle className="h-4 w-4 mr-2" />{receiveMutation.isPending ? t("receiving") : t("markReceived")}</Button>}
+        {["sent", "confirmed"].includes(order.status) && <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => receiveMutation.mutate()} disabled={receiveMutation.isPending}><CheckCircle className="h-4 w-4 mr-2" />{receiveMutation.isPending ? t("receiving") : t("markReceived")}</Button>}
       </div>
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2"><SaleItemsTable items={items} /></div>

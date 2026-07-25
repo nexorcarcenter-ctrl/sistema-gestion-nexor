@@ -48,7 +48,7 @@ function OrderCard({ order, onStatusChange, onNavigate }) {
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-9 h-9 bg-white rounded-xl border border-slate-200 flex items-center justify-center shrink-0 shadow-sm">
-            <Car className="h-4 w-4 text-orange-600" />
+            <Car className="h-4 w-4 text-[#E8461E]" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -94,7 +94,7 @@ function OrderCard({ order, onStatusChange, onNavigate }) {
         <div className="mb-3 space-y-1">
           {services.map((s, i) => (
             <div key={i} className="flex items-start gap-1.5 text-xs">
-              <Wrench className="h-3 w-3 text-orange-500 mt-0.5 shrink-0" />
+              <Wrench className="h-3 w-3 text-[#E8461E] mt-0.5 shrink-0" />
               <span className="text-slate-700 font-medium">{s.service_name}</span>
               {s.products?.length > 0 && (
                 <span className="text-slate-400 ml-1 flex items-center gap-0.5">

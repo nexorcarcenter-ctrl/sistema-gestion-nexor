@@ -132,8 +132,8 @@ export default function ServiceTypes() {
           {filtered.map(st => (
             <div key={st.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
-                  <Wrench className="h-4 w-4 text-orange-600" />
+                <div className="w-9 h-9 bg-[#E8461E]/10 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                  <Wrench className="h-4 w-4 text-[#E8461E]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 text-sm">{st.name}</p>

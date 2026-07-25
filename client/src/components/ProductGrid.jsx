@@ -14,7 +14,7 @@ export default function ProductGrid({ products, onAdd }) {
           </div>
           <p className="text-xs font-medium text-slate-900 truncate">{p.name}</p>
           <div className="flex items-center justify-between mt-0.5">
-            <p className="text-xs font-bold text-orange-600">{fmt(p.unit_price)}</p>
+            <p className="text-xs font-bold text-[#E8461E]">{fmt(p.unit_price)}</p>
             <p className="text-[10px] text-slate-400">{p.stock_quantity} qty</p>
           </div>
         </div>

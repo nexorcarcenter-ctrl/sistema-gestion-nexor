@@ -97,7 +97,7 @@ export default function Remitos() {
               onClick={() => setStatusFilter(f.key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                 statusFilter === f.key
-                  ? "bg-orange-500 text-white border-orange-500"
+                  ? "bg-[#E8461E] text-white border-[#E8461E]"
                   : "bg-white text-slate-600 border-slate-200 hover:border-orange-300"
               }`}
             >
@@ -132,8 +132,8 @@ export default function Remitos() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center shrink-0">
-                      <FileText className="h-5 w-5 text-orange-600" />
+                    <div className="w-10 h-10 bg-[#E8461E]/5 rounded-xl flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-[#E8461E]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">

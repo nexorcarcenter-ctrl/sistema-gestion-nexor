@@ -50,7 +50,7 @@ export default function StockMovementForm({ open, onOpenChange, products }) {
           <div><Label>{t("reason")}</Label><Textarea value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} rows={2} /></div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>{t("cancel")}</Button>
-            <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => createMutation.mutate(form)} disabled={!form.product_id || !form.quantity || createMutation.isPending}>{createMutation.isPending ? t("loading") : t("save")}</Button>
+            <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => createMutation.mutate(form)} disabled={!form.product_id || !form.quantity || createMutation.isPending}>{createMutation.isPending ? t("loading") : t("save")}</Button>
           </div>
         </div>
       </DialogContent>

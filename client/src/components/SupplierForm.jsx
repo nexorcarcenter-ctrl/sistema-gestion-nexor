@@ -57,7 +57,7 @@ export default function SupplierForm({ supplier, onSave, onCancel, isSaving }) {
       </div>
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button onClick={() => onSave(form)} disabled={!form.name || isSaving} className="bg-orange-600 hover:bg-orange-700">
+        <Button onClick={() => onSave(form)} disabled={!form.name || isSaving} className="bg-[#E8461E] hover:bg-[#c73a15]">
           {isSaving ? "Saving..." : "Save Supplier"}
         </Button>
       </div>

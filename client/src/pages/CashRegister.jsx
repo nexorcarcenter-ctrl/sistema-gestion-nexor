@@ -162,8 +162,8 @@ function PinModal({ title, onConfirm, onClose }) {
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xs mx-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center">
-              <Hash className="h-4 w-4 text-orange-600" />
+            <div className="w-9 h-9 bg-[#E8461E]/10 rounded-xl flex items-center justify-center">
+              <Hash className="h-4 w-4 text-[#E8461E]" />
             </div>
             <div>
               <p className="font-semibold text-slate-800 text-sm">{title}</p>
@@ -196,7 +196,7 @@ function PinModal({ title, onConfirm, onClose }) {
         <Button
           onClick={handleSubmit}
           disabled={loading || pin.length < 4}
-          className="w-full bg-orange-600 hover:bg-orange-700"
+          className="w-full bg-[#E8461E] hover:bg-[#c73a15]"
         >
           {loading ? "Verificando..." : <><UserCheck className="h-4 w-4 mr-2" />Confirmar</>}
         </Button>
@@ -282,7 +282,7 @@ function PaymentRow({ payment }) {
                 <div key={i} className="space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Wrench className="h-3 w-3 text-orange-500" />
+                      <Wrench className="h-3 w-3 text-[#E8461E]" />
                       <span className="text-xs font-semibold text-slate-700">{svc.service_name || "Servicio"}</span>
                     </div>
                     <span className="text-xs font-bold text-slate-800">{fmtUYU(svc.sale_price)}</span>
@@ -305,8 +305,8 @@ function PaymentRow({ payment }) {
                   )}
                   {laborEstimate > 0 && (
                     <div className="ml-4 flex items-center justify-between text-[11px]">
-                      <span className="text-orange-600 font-medium">Mano de obra</span>
-                      <span className="text-orange-600 font-medium">{fmtUYU(laborEstimate)}</span>
+                      <span className="text-[#E8461E] font-medium">Mano de obra</span>
+                      <span className="text-[#E8461E] font-medium">{fmtUYU(laborEstimate)}</span>
                     </div>
                   )}
                   {i < services.length - 1 && <div className="border-b border-slate-200 mt-1" />}
@@ -963,8 +963,8 @@ function TodayRegisterView({ register, payments, movements, orders, onPrint }) {
           <div className="divide-y divide-slate-100">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-100">
-                  <Wrench className="h-3.5 w-3.5 text-orange-600" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#E8461E]/10">
+                  <Wrench className="h-3.5 w-3.5 text-[#E8461E]" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-800">Mano de obra</p>
@@ -1520,7 +1520,7 @@ export default function CashRegisterPage() {
         {showOpenForm && !prevOpenRegister && (
           <div className="bg-white rounded-xl border border-orange-200 p-5 shadow-sm">
             <h3 className="font-semibold text-slate-800 mb-1 flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-orange-500" />
+              <Wallet className="h-4 w-4 text-[#E8461E]" />
               {todayRegisters.length === 0 ? "Abrir Caja del Día" : `Abrir Caja ${todayRegisters.length + 1} del Día`}
             </h3>
             {todayRegisters.length > 0 && <p className="text-xs text-slate-400 mb-4">Ya hay {todayRegisters.length} caja(s) cerrada(s) hoy</p>}

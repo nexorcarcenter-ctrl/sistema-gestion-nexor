@@ -52,10 +52,10 @@ export default function Reports() {
         <Tabs value={period} onValueChange={setPeriod}><TabsList><TabsTrigger value="today">{t("today")}</TabsTrigger><TabsTrigger value="week">{t("thisWeek")}</TabsTrigger><TabsTrigger value="month">{t("thisMonth")}</TabsTrigger><TabsTrigger value="year">{t("thisYear")}</TabsTrigger></TabsList></Tabs>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title={t("totalRevenue")} value={fmt(totalRevenue)} icon={DollarSign} color="text-orange-600" bgColor="bg-orange-50" />
+        <StatCard title={t("totalRevenue")} value={fmt(totalRevenue)} icon={DollarSign} color="text-[#E8461E]" bgColor="bg-[#E8461E]/5" />
         <StatCard title={t("grossProfit")} value={fmt(grossProfit)} icon={TrendingUp} color="text-emerald-600" bgColor="bg-emerald-50" />
         <StatCard title={t("profitMargin")} value={`${profitMargin}%`} icon={Percent} color="text-blue-600" bgColor="bg-blue-50" />
-        <StatCard title={t("transactions")} value={filteredSales.length} subtitle={`${t("avgTransaction")}: ${fmt(avgTransaction)}`} icon={ShoppingCart} color="text-orange-600" bgColor="bg-orange-50" />
+        <StatCard title={t("transactions")} value={filteredSales.length} subtitle={`${t("avgTransaction")}: ${fmt(avgTransaction)}`} icon={ShoppingCart} color="text-[#E8461E]" bgColor="bg-[#E8461E]/5" />
       </div>
       <div className="grid lg:grid-cols-2 gap-4">
         <SalesChart sales={sales} title={t("salesTrend")} />

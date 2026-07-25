@@ -134,7 +134,7 @@ export default function Products() {
   const totalStockValue = filteredProducts.reduce((s, p) => s + ((Number(p.costPrice) || 0) * (Number(p.stockQuantity) || 0)), 0);
   const totalSaleValue = filteredProducts.reduce((s, p) => s + ((Number(p.unitPrice) || 0) * (Number(p.stockQuantity) || 0)), 0);
 
-  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" /></div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" /></div>;
 
   return (
     <div className="space-y-6">
@@ -144,12 +144,12 @@ export default function Products() {
           {isAdmin && products.length > 0 && <Button variant="destructive" onClick={deleteAllProducts} disabled={deletingAll}>{deletingAll ? "Borrando..." : `Borrar todos (${products.length})`}</Button>}
           <Button variant="outline" onClick={handlePrintStock}><FileText className="h-4 w-4 mr-2" />Reporte Stock</Button>
           <Button variant="outline" onClick={() => setShowImport(true)}><Upload className="h-4 w-4 mr-2" />Importar CSV</Button>
-          <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => { setEditProduct(null); setShowForm(true); }}><Plus className="h-4 w-4 mr-2" />{t("addProduct")}</Button>
+          <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => { setEditProduct(null); setShowForm(true); }}><Plus className="h-4 w-4 mr-2" />{t("addProduct")}</Button>
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow-sm p-4"><p className="text-xs text-slate-500 uppercase">{t("totalProducts")}</p><p className="text-2xl font-bold text-slate-900">{stats.total}</p></div>
-        <div className="bg-white rounded-lg shadow-sm p-4"><p className="text-xs text-slate-500 uppercase">{t("active")}</p><p className="text-2xl font-bold text-orange-600">{stats.active}</p></div>
+        <div className="bg-white rounded-lg shadow-sm p-4"><p className="text-xs text-slate-500 uppercase">{t("active")}</p><p className="text-2xl font-bold text-[#E8461E]">{stats.active}</p></div>
         <div className="bg-white rounded-lg shadow-sm p-4"><p className="text-xs text-slate-500 uppercase">{t("lowStock")}</p><p className="text-2xl font-bold text-amber-600">{stats.lowStock}</p></div>
       </div>
       <div className="flex gap-3 items-center flex-wrap">

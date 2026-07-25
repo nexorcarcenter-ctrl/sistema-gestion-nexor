@@ -112,12 +112,12 @@ export default function PointOfSale() {
         <div className="flex-1 overflow-y-auto"><ProductGrid products={filtered} onAdd={addToCart} /></div>
       </div>
       <div className="w-full md:w-80 bg-white rounded-xl shadow-sm flex flex-col">
-        <div className="p-4 border-b"><div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-orange-600" /><h2 className="font-semibold text-slate-900">{t("cart")}</h2><span className="ml-auto text-sm text-slate-500">{cart.length} {t("items")}</span></div></div>
+        <div className="p-4 border-b"><div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-[#E8461E]" /><h2 className="font-semibold text-slate-900">{t("cart")}</h2><span className="ml-auto text-sm text-slate-500">{cart.length} {t("items")}</span></div></div>
         <div className="flex-1 overflow-y-auto p-4">{cart.length ? cart.map((item) => <CartItem key={item.id} item={item} onUpdateQty={updateQty} onRemove={removeItem} />) : <div className="flex flex-col items-center justify-center h-full text-slate-400"><ShoppingCart className="h-12 w-12 mb-2 opacity-30" /><p className="text-sm">{t("emptyCart")}</p></div>}</div>
         <div className="p-4 border-t bg-slate-50 rounded-b-xl space-y-2">
           <div className="flex justify-between text-sm"><span className="text-slate-500">{t("subtotal")}</span><span>{fmt(subtotal)}</span></div>
           {totalDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-emerald-600">{t("discount")}</span><span className="text-emerald-600">-{fmt(totalDiscount)}</span></div>}
-          <div className="flex justify-between text-lg font-bold pt-2 border-t"><span>{t("total")}</span><span className="text-orange-600">{fmt(total)}</span></div>
+          <div className="flex justify-between text-lg font-bold pt-2 border-t"><span>{t("total")}</span><span className="text-[#E8461E]">{fmt(total)}</span></div>
           {cashRegisterLoaded && !cashRegister && (
             <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-700">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
@@ -127,7 +127,7 @@ export default function PointOfSale() {
               </div>
             </div>
           )}
-          <Button className="w-full bg-orange-600 hover:bg-orange-700 mt-3" disabled={!cart.length || !cashRegister} onClick={() => setShowPayment(true)}>{t("completeSale")}</Button>
+          <Button className="w-full bg-[#E8461E] hover:bg-[#c73a15] mt-3" disabled={!cart.length || !cashRegister} onClick={() => setShowPayment(true)}>{t("completeSale")}</Button>
         </div>
       </div>
       <PaymentDialog open={showPayment} onOpenChange={setShowPayment} total={total} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} amountPaid={amountPaid} setAmountPaid={setAmountPaid} change={change} isProcessing={isProcessing} onConfirm={completeSale} />

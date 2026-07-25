@@ -66,8 +66,8 @@ function ServiceCard({ service, index, products, onUpdate, onRemove }) {
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center">
-            <Wrench className="h-3.5 w-3.5 text-orange-600" />
+          <div className="w-7 h-7 bg-[#E8461E]/10 rounded-lg flex items-center justify-center">
+            <Wrench className="h-3.5 w-3.5 text-[#E8461E]" />
           </div>
           <div>
             <p className="font-semibold text-sm text-slate-800">{service.service_name}</p>
@@ -163,7 +163,7 @@ function ServiceCard({ service, index, products, onUpdate, onRemove }) {
                 </div>
               )}
               {Number(service.labor_cost) > 0 && (
-                <div className="flex justify-between text-orange-600">
+                <div className="flex justify-between text-[#E8461E]">
                   <span>Mano de obra</span>
                   <span>{formatCurrency(service.labor_cost)}</span>
                 </div>
@@ -399,15 +399,15 @@ export default function NewServiceOrder() {
           {/* SECCIÓN 1: Datos de la cita (OBLIGATORIOS) */}
           <div className="bg-white rounded-xl border-2 border-orange-200 p-5 shadow-sm">
             <h2 className="font-semibold text-slate-800 mb-1 flex items-center gap-2">
-              <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
+              <div className="w-6 h-6 bg-[#E8461E] rounded flex items-center justify-center">
                 <span className="text-white text-xs font-bold">1</span>
               </div>
               Datos de la cita
             </h2>
-            <p className="text-xs text-orange-600 mb-4 ml-8">Todos los campos de esta sección son obligatorios</p>
+            <p className="text-xs text-[#E8461E] mb-4 ml-8">Todos los campos de esta sección son obligatorios</p>
 
             {/* Fecha y hora */}
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-4 mb-4 text-white">
+            <div className="bg-gradient-to-r from-[#E8461E] to-[#E8461E] rounded-xl p-4 mb-4 text-white">
               <p className="text-white/80 text-xs font-medium mb-3 flex items-center gap-1.5 uppercase tracking-wide">
                 <CalendarDays className="h-3.5 w-3.5" />Fecha y hora de la cita
               </p>
@@ -538,7 +538,7 @@ export default function NewServiceOrder() {
                     ) : filteredServiceTypes.map(st => (
                       <button key={st.id} onClick={() => { addService(st); setErrors(p => ({ ...p, services: "" })); }}
                         className="w-full text-left px-3 py-2 rounded-lg hover:bg-white text-sm font-medium text-slate-700 border border-transparent hover:border-orange-200 transition-colors flex items-center gap-2">
-                        <Wrench className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                        <Wrench className="h-3.5 w-3.5 text-[#E8461E] shrink-0" />
                         {st.name}
                       </button>
                     ))}
@@ -649,8 +649,8 @@ export default function NewServiceOrder() {
             <h3 className="font-semibold text-slate-800 mb-4">Resumen</h3>
 
             {(form.entry_date || form.appointment_time) && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
-                <p className="text-xs text-orange-600 font-medium mb-1 flex items-center gap-1">
+              <div className="bg-[#E8461E]/5 border border-orange-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-[#E8461E] font-medium mb-1 flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" />Cita agendada
                 </p>
                 {form.entry_date && (
@@ -659,7 +659,7 @@ export default function NewServiceOrder() {
                   </p>
                 )}
                 {form.appointment_time && (
-                  <p className="text-2xl font-bold text-orange-700 flex items-center gap-1.5 mt-0.5">
+                  <p className="text-2xl font-bold text-[#c73a15] flex items-center gap-1.5 mt-0.5">
                     <Clock className="h-5 w-5" />{form.appointment_time} hs
                   </p>
                 )}

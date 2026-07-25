@@ -249,7 +249,7 @@ export default function NewSale() {
           {/* Customer */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
             <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <User className="h-4 w-4 text-orange-500" />Cliente y Vehículo <span className="text-xs text-slate-400 font-normal">(opcional)</span>
+              <User className="h-4 w-4 text-[#E8461E]" />Cliente y Vehículo <span className="text-xs text-slate-400 font-normal">(opcional)</span>
             </h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -271,7 +271,7 @@ export default function NewSale() {
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4 text-orange-500" />Productos
+                <ShoppingCart className="h-4 w-4 text-[#E8461E]" />Productos
               </h3>
               <Button size="sm" variant="outline" onClick={addFreeItem}>
                 <Plus className="h-3.5 w-3.5 mr-1" />Ítem libre
@@ -296,13 +296,13 @@ export default function NewSale() {
                     <button
                       key={p.id}
                       onClick={() => addProduct(p)}
-                      className="w-full text-left px-3 py-2 hover:bg-orange-50 flex items-center justify-between text-sm border-b border-slate-50 last:border-0"
+                      className="w-full text-left px-3 py-2 hover:bg-[#E8461E]/5 flex items-center justify-between text-sm border-b border-slate-50 last:border-0"
                     >
                       <div>
                         <p className="font-medium text-slate-800">{p.name}</p>
                         <p className="text-xs text-slate-400">{p.sku} · Stock: {p.stock_quantity}</p>
                       </div>
-                      <span className="font-bold text-orange-700">{fmtUYU(p.unit_price)}</span>
+                      <span className="font-bold text-[#c73a15]">{fmtUYU(p.unit_price)}</span>
                     </button>
                   ))}
                 </div>
@@ -374,7 +374,7 @@ export default function NewSale() {
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
             <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <Banknote className="h-4 w-4 text-orange-500" />Cobro
+              <Banknote className="h-4 w-4 text-[#E8461E]" />Cobro
             </h3>
 
             {/* UYU */}
@@ -457,7 +457,7 @@ export default function NewSale() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Total cobrado</span>
-                <span className="font-bold text-orange-700">{fmtUYU(totalPaidUYU)}</span>
+                <span className="font-bold text-[#c73a15]">{fmtUYU(totalPaidUYU)}</span>
               </div>
               {change > 0 && (
                 <div className="flex justify-between">
@@ -485,7 +485,7 @@ export default function NewSale() {
             )}
 
             <Button
-              className={`w-full mt-4 ${saved ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700"}`}
+              className={`w-full mt-4 ${saved ? "bg-green-600 hover:bg-green-700" : "bg-[#E8461E] hover:bg-[#c73a15]"}`}
               onClick={handleSave}
               disabled={saving || !canSave || saved}
             >

@@ -70,8 +70,8 @@ function CashGuard({ children }) {
       {children}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 text-center">
-          <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <Wallet className="h-8 w-8 text-orange-500" />
+          <div className="w-16 h-16 bg-[#E8461E]/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <Wallet className="h-8 w-8 text-[#E8461E]" />
           </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">Caja no abierta</h2>
           <p className="text-slate-500 text-sm mb-6">
@@ -79,7 +79,7 @@ function CashGuard({ children }) {
           </p>
           <button
             onClick={() => navigate("/cash-register")}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
+            className="w-full bg-[#E8461E] hover:bg-[#c73a15] text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
           >
             Ir a Caja
           </button>

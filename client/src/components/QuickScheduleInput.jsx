@@ -64,26 +64,26 @@ export default function QuickScheduleInput({ onApply }) {
   }[key] || key);
 
   return (
-    <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl border border-orange-200 shadow-sm overflow-hidden">
+    <div className="bg-gradient-to-r from-[#E8461E]/5 to-[#E8461E]/5 rounded-xl border border-orange-200 shadow-sm overflow-hidden">
       {/* Header toggle */}
       <button
-        className="w-full flex items-center justify-between p-4 hover:bg-orange-50/80 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-[#E8461E]/5/80 transition-colors"
         onClick={() => setOpen(!open)}
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-orange-600" />
+          <div className="w-9 h-9 bg-[#E8461E]/10 rounded-xl flex items-center justify-center">
+            <Sparkles className="h-4 w-4 text-[#E8461E]" />
           </div>
           <div className="text-left">
             <p className="font-semibold text-orange-800 text-sm">Agendar con IA</p>
-            <p className="text-xs text-orange-500">Escribí en texto libre y la IA completa el formulario</p>
+            <p className="text-xs text-[#E8461E]">Escribí en texto libre y la IA completa el formulario</p>
           </div>
         </div>
-        {open ? <ChevronUp className="h-4 w-4 text-orange-400" /> : <ChevronDown className="h-4 w-4 text-orange-400" />}
+        {open ? <ChevronUp className="h-4 w-4 text-[#E8461E]" /> : <ChevronDown className="h-4 w-4 text-[#E8461E]" />}
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-3 border-t border-orange-100">
+        <div className="px-4 pb-4 space-y-3 border-t border-[#E8461E]/10">
           <div className="pt-3">
             <Textarea
               value={text}
@@ -97,7 +97,7 @@ export default function QuickScheduleInput({ onApply }) {
           <Button
             onClick={handleInterpret}
             disabled={loading || !text.trim()}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+            className="w-full bg-[#E8461E] hover:bg-[#c73a15] text-white"
           >
             {loading ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Interpretando...</>
@@ -115,15 +115,15 @@ export default function QuickScheduleInput({ onApply }) {
 
           {result && (
             <div className="bg-white rounded-xl border border-orange-200 p-4 space-y-3">
-              <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide flex items-center gap-1.5">
+              <p className="text-xs font-semibold text-[#c73a15] uppercase tracking-wide flex items-center gap-1.5">
                 <CheckCircle className="h-3.5 w-3.5" />Datos interpretados — revisá antes de aplicar
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(result).map(([key, val]) => {
                   if (!val) return null;
                   return (
-                    <div key={key} className={`bg-orange-50 rounded-lg px-3 py-2 ${key === "notes" ? "col-span-2" : ""}`}>
-                      <p className="text-[10px] text-orange-500 font-medium">{fieldLabel(key)}</p>
+                    <div key={key} className={`bg-[#E8461E]/5 rounded-lg px-3 py-2 ${key === "notes" ? "col-span-2" : ""}`}>
+                      <p className="text-[10px] text-[#E8461E] font-medium">{fieldLabel(key)}</p>
                       <p className="text-sm font-semibold text-slate-800 truncate">{val}</p>
                     </div>
                   );
@@ -133,7 +133,7 @@ export default function QuickScheduleInput({ onApply }) {
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => setResult(null)}>
                   Descartar
                 </Button>
-                <Button size="sm" className="flex-1 bg-orange-600 hover:bg-orange-700" onClick={handleApply}>
+                <Button size="sm" className="flex-1 bg-[#E8461E] hover:bg-[#c73a15]" onClick={handleApply}>
                   <CheckCircle className="h-3.5 w-3.5 mr-1.5" />Aplicar al formulario
                 </Button>
               </div>

@@ -74,7 +74,7 @@ function ComboboxInput({ value, onChange, suggestions = [], placeholder }) {
       {open && filtered.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
           {filtered.map((s) => (
-            <div key={s} className="px-3 py-2 text-sm cursor-pointer hover:bg-orange-50 hover:text-orange-700"
+            <div key={s} className="px-3 py-2 text-sm cursor-pointer hover:bg-[#E8461E]/5 hover:text-[#c73a15]"
               onMouseDown={() => { setInputVal(s); onChange(s); setOpen(false); }}>{s}</div>
           ))}
         </div>
@@ -178,12 +178,12 @@ export default function ProductForm({ product, categories = [], suppliers = [], 
           <Input value={form.name || ""} onChange={(e) => handleNameChange(e.target.value)} className={detecting ? "pr-8" : ""} placeholder="Ej: Radio Pioneer DMH-A4450BT" />
           {detecting && (
             <div className="absolute right-2 top-1/2 -translate-y-1/2">
-              <Wand2 className="h-4 w-4 text-orange-500 animate-pulse" />
+              <Wand2 className="h-4 w-4 text-[#E8461E] animate-pulse" />
             </div>
           )}
         </div>
         {detectedCategory && isNew && (
-          <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+          <p className="text-xs text-[#E8461E] mt-1 flex items-center gap-1">
             <Sparkles className="h-3 w-3" /> Categoría detectada: <strong>{detectedCategory}</strong> · SKU: <strong>{form.sku}</strong>
           </p>
         )}
@@ -272,9 +272,9 @@ export default function ProductForm({ product, categories = [], suppliers = [], 
       {/* Vehículo */}
       <div className="border border-slate-200 rounded-lg p-3 space-y-3">
         <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" checked={hasVehicle} onChange={(e) => handleVehicleToggle(e.target.checked)} className="w-4 h-4 accent-orange-600" />
+          <input type="checkbox" checked={hasVehicle} onChange={(e) => handleVehicleToggle(e.target.checked)} className="w-4 h-4 accent-[#E8461E]" />
           <span className="text-sm font-medium text-slate-700">Aplica a vehículo específico</span>
-          {detecting && <span className="text-xs text-orange-500 flex items-center gap-1"><Wand2 className="h-3 w-3" /> Detectando...</span>}
+          {detecting && <span className="text-xs text-[#E8461E] flex items-center gap-1"><Wand2 className="h-3 w-3" /> Detectando...</span>}
         </label>
         {hasVehicle && (
           <div className="grid grid-cols-3 gap-3">
@@ -312,9 +312,9 @@ export default function ProductForm({ product, categories = [], suppliers = [], 
                   )}
                   <span className="text-slate-400">×{m.quantity} ud.</span>
                 </div>
-                <span className={`font-semibold ${i === 0 ? "text-orange-600" : "text-slate-500"}`}>
+                <span className={`font-semibold ${i === 0 ? "text-[#E8461E]" : "text-slate-500"}`}>
                   ${Number(m.unit_cost).toLocaleString("es-UY")}
-                  {i === 0 && <span className="ml-1 text-[10px] font-normal text-orange-400">actual</span>}
+                  {i === 0 && <span className="ml-1 text-[10px] font-normal text-[#E8461E]">actual</span>}
                 </span>
               </div>
             ))}
@@ -327,7 +327,7 @@ export default function ProductForm({ product, categories = [], suppliers = [], 
         <Button
           onClick={() => onSave(form)}
           disabled={!form.name || !form.sku || isSaving || !!duplicate || detecting}
-          className="bg-orange-600 hover:bg-orange-700"
+          className="bg-[#E8461E] hover:bg-[#c73a15]"
         >
           {isSaving ? t("loading") : detecting ? "Detectando..." : t("save")}
         </Button>

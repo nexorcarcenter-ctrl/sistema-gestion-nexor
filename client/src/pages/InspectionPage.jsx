@@ -63,7 +63,7 @@ export default function InspectionPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <ClipboardCheck className="h-6 w-6 text-orange-500" />
+            <ClipboardCheck className="h-6 w-6 text-[#E8461E]" />
             Inspección del Vehículo
           </h1>
           <p className="text-sm text-slate-500">Marcá los daños existentes y tomá la firma del cliente</p>
@@ -75,7 +75,7 @@ export default function InspectionPage() {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <User className="h-4 w-4 text-orange-500" />
+              <User className="h-4 w-4 text-[#E8461E]" />
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Cliente</span>
             </div>
             <p className="font-semibold text-slate-800">{order.customerName || "—"}</p>
@@ -87,7 +87,7 @@ export default function InspectionPage() {
           </div>
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Car className="h-4 w-4 text-orange-500" />
+              <Car className="h-4 w-4 text-[#E8461E]" />
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Vehículo</span>
             </div>
             <p className="font-semibold text-slate-800">
@@ -103,7 +103,7 @@ export default function InspectionPage() {
         </div>
         {(order.entryDate || order.appointmentTime) && (
           <div className="mt-3 pt-3 border-t flex items-center gap-3">
-            <CalendarDays className="h-3.5 w-3.5 text-orange-400" />
+            <CalendarDays className="h-3.5 w-3.5 text-[#E8461E]" />
             <span className="text-xs text-slate-500">
               {order.entryDate && new Date(order.entryDate + "T00:00:00").toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
               {order.appointmentTime && ` · ${order.appointmentTime} hs`}
