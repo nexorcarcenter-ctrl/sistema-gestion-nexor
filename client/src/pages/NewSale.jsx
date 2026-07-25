@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, getDefaultExchangeRate, setDefaultExchangeRate } from "@/utils";
 import { Sale } from "@/entities/Sale";
 import { Product } from "@/entities/Product";
 import { PaymentMethod } from "@/entities/PaymentMethod";
@@ -42,7 +42,7 @@ export default function NewSale() {
 
   // Payments: array of { method_id, method_name, type, currency, amount, exchange_rate }
   const [payments, setPayments] = useState([]);
-  const [exchangeRate, setExchangeRate] = useState("40");
+  const [exchangeRate, setExchangeRate] = useState(() => String(getDefaultExchangeRate()));
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -410,7 +410,7 @@ export default function NewSale() {
                     <Input
                       type="number"
                       value={exchangeRate}
-                      onChange={e => setExchangeRate(e.target.value)}
+                      onChange={e => { setExchangeRate(e.target.value); setDefaultExchangeRate(e.target.value); }}
                       className="h-7 text-sm"
                       placeholder="40"
                     />

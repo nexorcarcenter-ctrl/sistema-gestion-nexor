@@ -12,3 +12,15 @@ export function createPageUrl(pageName) {
       );
   return query ? `${path}?${query}` : path;
 }
+
+const DEFAULT_EXCHANGE_RATE = 43;
+const EXCHANGE_RATE_KEY = "nexor_exchange_rate";
+
+export function getDefaultExchangeRate() {
+  const stored = localStorage.getItem(EXCHANGE_RATE_KEY);
+  return stored ? parseFloat(stored) || DEFAULT_EXCHANGE_RATE : DEFAULT_EXCHANGE_RATE;
+}
+
+export function setDefaultExchangeRate(rate) {
+  localStorage.setItem(EXCHANGE_RATE_KEY, String(rate));
+}

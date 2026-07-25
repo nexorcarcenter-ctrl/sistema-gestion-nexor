@@ -5,6 +5,7 @@ import { ServiceOrder } from "@/entities/ServiceOrder";
 import { PaymentMethod } from "@/entities/PaymentMethod";
 import { Sale } from "@/entities/Sale";
 import { getSequence } from "@/entities/base";
+import { getDefaultExchangeRate, setDefaultExchangeRate } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +43,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [amount, setAmount] = useState("");
-  const [exchangeRate, setExchangeRate] = useState("40");
+  const [exchangeRate, setExchangeRate] = useState(() => String(getDefaultExchangeRate()));
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [cashRegister, setCashRegister] = useState(null);
@@ -53,7 +54,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
   useEffect(() => {
     if (!open) return;
     setAmount("");
-    setExchangeRate("40");
+    setExchangeRate(String(getDefaultExchangeRate()));
     setNotes("");
     setSelectedMethod(null);
     setEntries([]);
@@ -458,7 +459,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
                 <Input
                   type="number"
                   value={exchangeRate}
-                  onChange={e => setExchangeRate(e.target.value)}
+                  onChange={e => { setExchangeRate(e.target.value); setDefaultExchangeRate(e.target.value); }}
                   className="w-28 h-8 text-sm"
                 />
                 <span className="text-xs text-slate-500">UYU</span>

@@ -94,6 +94,7 @@ export default function Products() {
   const [deletingAll, setDeletingAll] = useState(false);
   const deleteAllProducts = async () => {
     if (!window.confirm(`¿Borrar todos los ${products.length} productos? Esta acción no se puede deshacer.`)) return;
+    if (!window.confirm("¿Estás SEGURO? Se eliminarán TODOS los productos permanentemente.")) return;
     setDeletingAll(true);
     for (const p of products) {
       await Product.delete(p.id);

@@ -32,7 +32,6 @@ import CashRegister from "./pages/CashRegister";
 import Reports from "./pages/Reports";
 import AdminDashboard from "./pages/AdminDashboard";
 import Cars from "./pages/Cars";
-import ServiceOrdersList from "./pages/ServiceOrders";
 import InspectionPage from "./pages/InspectionPage";
 import ExitInspectionPage from "./pages/ExitInspectionPage";
 import UsersPage from "./pages/UsersPage";
