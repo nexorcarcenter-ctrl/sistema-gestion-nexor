@@ -32,15 +32,15 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">{t("dashboard")}</h1>
-        <Link to={createPageUrl("PointOfSale")} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors">
+        <Link to={createPageUrl("PointOfSale")} className="flex items-center gap-2 px-4 py-2 bg-[#E8461E] hover:bg-[#c73a15] text-white rounded-lg text-sm font-medium transition-colors">
           {t("newSale")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title={t("todaySales")} value={fmt(todayRevenue)} subtitle={`${todaySales.length} ${t("transactions").toLowerCase()}`} icon={DollarSign} color="text-orange-600" bgColor="bg-orange-50" />
+        <StatCard title={t("todaySales")} value={fmt(todayRevenue)} subtitle={`${todaySales.length} ${t("transactions").toLowerCase()}`} icon={DollarSign} color="text-[#E8461E]" bgColor="bg-[#E8461E]/5" />
         <StatCard title={t("totalProducts")} value={products.length} subtitle={`${products.filter(p => p.status === 'active').length} ${t("active").toLowerCase()}`} icon={Package} color="text-blue-600" bgColor="bg-blue-50" />
         <StatCard title={t("lowStock")} value={lowStock.length} icon={AlertTriangle} color="text-amber-600" bgColor="bg-amber-50" />
-        <StatCard title={t("pendingOrders")} value={pendingPOs.length} icon={Truck} color="text-orange-600" bgColor="bg-orange-50" />
+        <StatCard title={t("pendingOrders")} value={pendingPOs.length} icon={Truck} color="text-[#E8461E]" bgColor="bg-[#E8461E]/5" />
       </div>
       <div className="grid lg:grid-cols-2 gap-4">
         <SalesChart sales={sales} title={t("salesTrend")} />
@@ -50,7 +50,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-700">{t("recentSales")}</h3>
-            <Link to={createPageUrl("Sales")} className="text-xs text-orange-600 hover:text-orange-700 font-medium">{t("viewAll")}</Link>
+            <Link to={createPageUrl("Sales")} className="text-xs text-[#E8461E] hover:text-[#c73a15] font-medium">{t("viewAll")}</Link>
           </div>
           <div className="space-y-2">
             {recentSales.length ? recentSales.map((sale) => <SaleRow key={sale.id} sale={sale} />) : (
@@ -61,7 +61,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-slate-700">{t("lowStockAlerts")}</h3>
-            <Link to={createPageUrl("Products")} className="text-xs text-orange-600 hover:text-orange-700 font-medium">{t("viewAll")}</Link>
+            <Link to={createPageUrl("Products")} className="text-xs text-[#E8461E] hover:text-[#c73a15] font-medium">{t("viewAll")}</Link>
           </div>
           <LowStockAlert products={lowStock} />
           {!lowStock.length && <p className="text-xs text-slate-400 text-center py-4">{t("allWellStocked")}</p>}

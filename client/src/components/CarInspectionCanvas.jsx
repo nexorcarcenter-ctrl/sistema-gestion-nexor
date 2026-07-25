@@ -521,8 +521,8 @@ export default function CarInspectionCanvas({ value, onChange }) {
               onClick={() => changeType(v.id)}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                 vehicleType === v.id
-                  ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-orange-300 hover:text-orange-600"
+                  ? "bg-[#E8461E] text-white border-[#E8461E] shadow-sm"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-orange-300 hover:text-[#E8461E]"
               }`}
             >
               {v.label}
@@ -567,7 +567,7 @@ export default function CarInspectionCanvas({ value, onChange }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-5">
         <div>
           <p className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-            <UserCheck className="h-4 w-4 text-orange-500" />Firma del cliente
+            <UserCheck className="h-4 w-4 text-[#E8461E]" />Firma del cliente
           </p>
           <SignatureCanvas
             onSave={(sig) => { setSignature(sig); notify(vehicleType, marks, sig, employeeSignature); }}

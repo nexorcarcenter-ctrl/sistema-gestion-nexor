@@ -21,7 +21,7 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-orange-500" />Nuevo Usuario
+            <Plus className="h-5 w-5 text-[#E8461E]" />Nuevo Usuario
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
@@ -51,7 +51,7 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
             <Button
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-[#E8461E] hover:bg-[#c73a15]"
               onClick={() => onSave(form)}
               disabled={saving || !form.fullName || !form.username || !form.password}
             >
@@ -77,7 +77,7 @@ function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Edit2 className="h-5 w-5 text-orange-500" />Editar Usuario
+            <Edit2 className="h-5 w-5 text-[#E8461E]" />Editar Usuario
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
@@ -102,7 +102,7 @@ function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => onSave(form)} disabled={saving || !form.fullName || !form.username}>
+            <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => onSave(form)} disabled={saving || !form.fullName || !form.username}>
               {saving ? "Guardando..." : "Guardar"}
             </Button>
           </div>
@@ -125,7 +125,7 @@ function ResetPasswordDialog({ open, onClose, user, onSave, saving, error }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-orange-500" />
+            <KeyRound className="h-5 w-5 text-[#E8461E]" />
             Cambiar Contraseña — {user?.fullName}
           </DialogTitle>
         </DialogHeader>
@@ -143,7 +143,7 @@ function ResetPasswordDialog({ open, onClose, user, onSave, saving, error }) {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
             <Button
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-[#E8461E] hover:bg-[#c73a15]"
               onClick={() => onSave(password)}
               disabled={saving || !password || password !== confirm || password.length < 6}
             >
@@ -170,7 +170,7 @@ function SetPinDialog({ open, onClose, user, onSave, saving, error }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Hash className="h-5 w-5 text-orange-500" />
+            <Hash className="h-5 w-5 text-[#E8461E]" />
             PIN de Caja — {user?.fullName}
           </DialogTitle>
         </DialogHeader>
@@ -207,7 +207,7 @@ function SetPinDialog({ open, onClose, user, onSave, saving, error }) {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
             <Button
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-[#E8461E] hover:bg-[#c73a15]"
               onClick={() => onSave(pin)}
               disabled={saving || !pin || pin !== confirm || invalid}
             >
@@ -309,11 +309,11 @@ export default function UsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Users className="h-6 w-6 text-orange-500" />Usuarios
+            <Users className="h-6 w-6 text-[#E8461E]" />Usuarios
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">{users.length} usuario(s) registrado(s)</p>
         </div>
-        <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => { setError(""); setShowCreate(true); }}>
+        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => { setError(""); setShowCreate(true); }}>
           <Plus className="h-4 w-4 mr-2" />Nuevo Usuario
         </Button>
       </div>
@@ -323,8 +323,8 @@ export default function UsersPage() {
           <div key={u.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                  <UserIcon className="h-5 w-5 text-orange-600" />
+                <div className="w-10 h-10 rounded-full bg-[#E8461E]/10 flex items-center justify-center flex-shrink-0">
+                  <UserIcon className="h-5 w-5 text-[#E8461E]" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-800 truncate">{u.fullName || "—"}</p>
@@ -333,7 +333,7 @@ export default function UsersPage() {
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {u.role === "admin" ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-[#E8461E]/10 text-[#c73a15] px-2 py-0.5 rounded-full font-medium">
                     <ShieldCheck className="h-3 w-3" />Admin
                   </span>
                 ) : (
@@ -342,8 +342,8 @@ export default function UsersPage() {
                   </span>
                 )}
                 {u.isActive ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                    <Power className="h-3 w-3" />Activo
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-[#CCFF00]/20 text-[#0D0D0F] px-2 py-0.5 rounded-full font-medium">
+                    <Power className="h-3 w-3 text-[#CCFF00]" />Activo
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
@@ -359,7 +359,7 @@ export default function UsersPage() {
               <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-slate-100">
                 <button
                   onClick={() => { setError(""); setEditUser(u); }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-orange-100 text-slate-600 hover:text-orange-700 text-xs font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-[#E8461E]/10 text-slate-600 hover:text-[#c73a15] text-xs font-medium transition-colors"
                 >
                   <Edit2 className="h-3 w-3" />Editar
                 </button>
@@ -371,7 +371,7 @@ export default function UsersPage() {
                 </button>
                 <button
                   onClick={() => { setError(""); setPinUser(u); }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-orange-100 text-slate-600 hover:text-orange-700 text-xs font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-[#E8461E]/10 text-slate-600 hover:text-[#c73a15] text-xs font-medium transition-colors"
                 >
                   <Hash className="h-3 w-3" />PIN
                 </button>

@@ -281,7 +281,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-orange-500" />
+            <DollarSign className="h-5 w-5 text-[#E8461E]" />
             Registrar Pago
           </DialogTitle>
         </DialogHeader>
@@ -304,7 +304,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
           )}
           <div className="flex justify-between items-center mt-1 pt-1 border-t border-slate-200">
             <span className="text-slate-600 font-medium">Saldo pendiente</span>
-            <span className="font-bold text-orange-700 text-base">{fmt(stillRemaining > 0 ? stillRemaining : remaining)}</span>
+            <span className="font-bold text-[#c73a15] text-base">{fmt(stillRemaining > 0 ? stillRemaining : remaining)}</span>
           </div>
         </div>
 
@@ -347,7 +347,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
             {stillRemaining > 0 && (
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Resta cubrir</span>
-                <span className="font-bold text-orange-600">{fmt(stillRemaining)}</span>
+                <span className="font-bold text-[#E8461E]">{fmt(stillRemaining)}</span>
               </div>
             )}
           </div>
@@ -367,7 +367,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
                       onClick={() => setSelectedMethod(m)}
                       className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border-2 text-xs font-medium transition-all ${
                         selectedMethod?.id === m.id
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
+                          ? "border-[#E8461E] bg-[#E8461E]/5 text-[#c73a15]"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                       }`}
                     >
@@ -438,7 +438,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
                 </Button>
               </div>
               <button
-                className="text-xs text-orange-600 mt-1 hover:underline"
+                className="text-xs text-[#E8461E] mt-1 hover:underline"
                 onClick={() => {
                   const rem = stillRemaining > 0 ? stillRemaining : remaining;
                   setAmount(currency === "USD" ? (rem / exchangeRateNum).toFixed(2) : rem.toString());

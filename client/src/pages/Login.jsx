@@ -27,15 +27,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: "#212121" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: "#0D0D0F" }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-2 mb-8">
-          <img src="/norvian-logo.png" alt="Norvian" className="h-10 w-auto" />
+          <img src="/nexor-logo.svg" alt="Nexor" className="h-10 w-auto" />
           <p className="text-slate-400 text-xs">Sistema de gestión</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-xl">
-          <h2 className="font-semibold text-lg mb-4" style={{ color: "#212121" }}>
+          <h2 className="font-semibold text-lg mb-4" style={{ color: "#0D0D0F" }}>
             {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
           </h2>
 
@@ -52,7 +52,7 @@ export default function Login() {
                   value={form.fullName}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                  style={{ "--tw-ring-color": "#F5691F" }}
+                  style={{ "--tw-ring-color": "#E8461E" }}
                 />
                 <select
                   value={form.cargo}
@@ -86,9 +86,9 @@ export default function Login() {
               type="submit"
               disabled={loading}
               className="w-full text-white rounded-lg py-2 text-sm font-semibold transition-colors disabled:opacity-50"
-              style={{ backgroundColor: "#F5691F" }}
-              onMouseOver={e => e.currentTarget.style.backgroundColor = "#d94f0a"}
-              onMouseOut={e => e.currentTarget.style.backgroundColor = "#F5691F"}
+              style={{ backgroundColor: "#E8461E" }}
+              onMouseOver={e => e.currentTarget.style.backgroundColor = "#c73a15"}
+              onMouseOut={e => e.currentTarget.style.backgroundColor = "#E8461E"}
             >
               {loading ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}
             </button>
@@ -99,7 +99,7 @@ export default function Login() {
             <button
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="font-medium hover:underline"
-              style={{ color: "#F5691F" }}
+              style={{ color: "#E8461E" }}
             >
               {mode === "login" ? "Registrarse" : "Iniciar sesión"}
             </button>

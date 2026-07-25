@@ -235,17 +235,17 @@ export default function NewRemito() {
         {/* 1. Orden de servicio */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
           <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <div className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center">
-              <span className="text-orange-600 text-xs font-bold">1</span>
+            <div className="w-6 h-6 bg-[#E8461E]/10 rounded flex items-center justify-center">
+              <span className="text-[#E8461E] text-xs font-bold">1</span>
             </div>
             Orden de Servicio Asociada
           </h2>
 
           {selectedOrder ? (
-            <div className="flex items-start justify-between bg-orange-50 border border-orange-200 rounded-xl p-4">
+            <div className="flex items-start justify-between bg-[#E8461E]/5 border border-orange-200 rounded-xl p-4">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center">
-                  <Car className="h-4 w-4 text-orange-600" />
+                <div className="w-9 h-9 bg-[#E8461E]/10 rounded-xl flex items-center justify-center">
+                  <Car className="h-4 w-4 text-[#E8461E]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export default function NewRemito() {
                       onClick={() => selectOrder(o)}
                       className="w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b last:border-0 flex items-center gap-3"
                     >
-                      <Car className="h-4 w-4 text-orange-500 shrink-0" />
+                      <Car className="h-4 w-4 text-[#E8461E] shrink-0" />
                       <div>
                         <span className="font-semibold text-sm text-slate-800">{o.car_plate}</span>
                         {o.order_number && <span className="text-xs text-slate-400 ml-1.5">#{o.order_number}</span>}
@@ -311,8 +311,8 @@ export default function NewRemito() {
         {/* 2. Fecha y notas */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
           <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <div className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center">
-              <span className="text-orange-600 text-xs font-bold">2</span>
+            <div className="w-6 h-6 bg-[#E8461E]/10 rounded flex items-center justify-center">
+              <span className="text-[#E8461E] text-xs font-bold">2</span>
             </div>
             Datos del Remito
           </h2>
@@ -345,8 +345,8 @@ export default function NewRemito() {
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-              <div className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center">
-                <span className="text-orange-600 text-xs font-bold">3</span>
+              <div className="w-6 h-6 bg-[#E8461E]/10 rounded flex items-center justify-center">
+                <span className="text-[#E8461E] text-xs font-bold">3</span>
               </div>
               Mercadería
             </h2>
@@ -385,7 +385,7 @@ export default function NewRemito() {
                     className="w-full text-left px-3 py-2 rounded-lg hover:bg-white text-sm border border-transparent hover:border-orange-200 transition-colors flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
-                      <Package className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                      <Package className="h-3.5 w-3.5 text-[#E8461E] shrink-0" />
                       <div>
                         <span className="font-medium text-slate-700">{p.name}</span>
                         {p.sku && <span className="text-xs text-slate-400 ml-1.5">SKU: {p.sku}</span>}
@@ -473,7 +473,7 @@ export default function NewRemito() {
             <Button
               onClick={handleIssue}
               disabled={issuing || items.length === 0}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-[#E8461E] hover:bg-[#c73a15]"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               {issuing ? "Emitiendo..." : "Emitir Remito"}

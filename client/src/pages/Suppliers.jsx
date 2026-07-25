@@ -26,13 +26,13 @@ export default function Suppliers() {
   });
 
   const filteredSuppliers = useMemo(() => suppliers.filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.contact_name?.toLowerCase().includes(search.toLowerCase())), [suppliers, search]);
-  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" /></div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">{t("suppliers")}</h1>
-        <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => { setEditSupplier(null); setShowForm(true); }}><Plus className="h-4 w-4 mr-2" />{t("addSupplier")}</Button>
+        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => { setEditSupplier(null); setShowForm(true); }}><Plus className="h-4 w-4 mr-2" />{t("addSupplier")}</Button>
       </div>
       <div className="relative max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder={t("searchSuppliers")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -50,7 +50,7 @@ export default function CarForm({ car, suppliers = [], onSave, onCancel, isSavin
 
   const SectionTitle = ({ label }) => (
     <div className="col-span-full border-b border-slate-200 pb-1 mb-1">
-      <p className="text-xs font-semibold text-orange-700 uppercase tracking-wider">{label}</p>
+      <p className="text-xs font-semibold text-[#c73a15] uppercase tracking-wider">{label}</p>
     </div>
   );
 
@@ -61,7 +61,7 @@ export default function CarForm({ car, suppliers = [], onSave, onCancel, isSavin
     </div>
   );
 
-  const selectClass = "h-9 w-full px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-orange-500";
+  const selectClass = "h-9 w-full px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E8461E]";
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
@@ -138,7 +138,7 @@ export default function CarForm({ car, suppliers = [], onSave, onCancel, isSavin
 
       <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
         <Button variant="outline" onClick={onCancel}>{t("cancel")}</Button>
-        <Button className="bg-orange-600 hover:bg-orange-700" onClick={handleSubmit} disabled={!form.brand || !form.model || !form.year || isSaving}>
+        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={handleSubmit} disabled={!form.brand || !form.model || !form.year || isSaving}>
           {isSaving ? t("loading") : t("save")}
         </Button>
       </div>

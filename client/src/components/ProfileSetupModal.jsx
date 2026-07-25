@@ -25,7 +25,7 @@ export default function ProfileSetupModal({ onComplete }) {
       <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#E8461E] rounded-lg flex items-center justify-center">
               <Wrench className="h-5 w-5 text-white" />
             </div>
             <DialogTitle className="text-lg">Bienvenido al sistema</DialogTitle>
@@ -60,7 +60,7 @@ export default function ProfileSetupModal({ onComplete }) {
           </div>
 
           <Button
-            className="w-full bg-orange-600 hover:bg-orange-700"
+            className="w-full bg-[#E8461E] hover:bg-[#c73a15]"
             onClick={handleSave}
             disabled={!fullName.trim() || !cargo || loading}
           >

@@ -36,7 +36,7 @@ export default function PORow({ order }) {
           ETA: {moment(order.expected_date).format("MMM D")}
         </div>
       )}
-      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-orange-500 transition-colors" />
+      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-[#E8461E] transition-colors" />
     </Link>
   );
 }

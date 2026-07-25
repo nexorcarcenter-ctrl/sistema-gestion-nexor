@@ -87,7 +87,7 @@ export default function Categories() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" />
     </div>
   );
 
@@ -96,7 +96,7 @@ export default function Categories() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">{t("categories")}</h1>
-        <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => openNew()}>
+        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => openNew()}>
           <Plus className="h-4 w-4 mr-2" />{t("addCategory")}
         </Button>
       </div>
@@ -143,7 +143,7 @@ export default function Categories() {
                       <p className="font-semibold text-slate-900">{cat.name}</p>
                       {cat.description && <p className="text-xs text-slate-500 truncate">{cat.description}</p>}
                       {children.length > 0 && (
-                        <p className="text-xs text-orange-600 mt-0.5">{children.length} subcategoría{children.length !== 1 ? "s" : ""}</p>
+                        <p className="text-xs text-[#E8461E] mt-0.5">{children.length} subcategoría{children.length !== 1 ? "s" : ""}</p>
                       )}
                     </div>
 
@@ -151,7 +151,7 @@ export default function Categories() {
                     <div className="flex items-center gap-1 shrink-0">
                       <Button
                         variant="ghost" size="sm"
-                        className="h-7 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        className="h-7 px-2 text-xs text-[#E8461E] hover:text-[#c73a15] hover:bg-[#E8461E]/5"
                         onClick={() => openNew(cat.id)}
                       >
                         <Plus className="h-3 w-3 mr-1" />Sub
@@ -189,9 +189,9 @@ export default function Categories() {
                             className="flex-1 min-w-0 cursor-pointer group"
                             onClick={() => navigate(createPageUrl("Products") + `?category=${encodeURIComponent(child.name)}`)}
                           >
-                            <p className="text-sm font-medium text-slate-800 group-hover:text-orange-600 transition-colors">{child.name}</p>
+                            <p className="text-sm font-medium text-slate-800 group-hover:text-[#E8461E] transition-colors">{child.name}</p>
                             {child.description && <p className="text-xs text-slate-400 truncate">{child.description}</p>}
-                            <p className="text-xs text-slate-400 group-hover:text-orange-500 transition-colors">Ver productos →</p>
+                            <p className="text-xs text-slate-400 group-hover:text-[#E8461E] transition-colors">Ver productos →</p>
                           </div>
 
                           {/* Actions */}
@@ -277,7 +277,7 @@ export default function Categories() {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
               <Button
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-[#E8461E] hover:bg-[#c73a15]"
                 onClick={() => saveMutation.mutate({ ...form, parent_id: form.parent_id || null })}
                 disabled={!form.name || saveMutation.isPending}
               >

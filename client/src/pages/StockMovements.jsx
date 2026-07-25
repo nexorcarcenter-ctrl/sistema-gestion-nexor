@@ -30,13 +30,13 @@ export default function StockMovements() {
     return matchSearch && (typeFilter === "all" || m.movement_type === typeFilter);
   }), [movements, search, typeFilter]);
 
-  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" /></div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" /></div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">{t("movements")}</h1>
-        <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-2" />{t("recordMovement")}</Button>
+        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-2" />{t("recordMovement")}</Button>
       </div>
       <div className="flex gap-4 items-center flex-wrap">
         <div className="relative flex-1 max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder={t("searchProducts")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>

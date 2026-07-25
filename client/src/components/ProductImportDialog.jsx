@@ -155,7 +155,7 @@ export default function ProductImportDialog({ open, onClose, onDone }) {
       <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-orange-600" />
+            <FileText className="h-5 w-5 text-[#E8461E]" />
             Importar Productos (CSV)
           </DialogTitle>
         </DialogHeader>
@@ -176,7 +176,7 @@ export default function ProductImportDialog({ open, onClose, onDone }) {
           <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
             <Upload className="h-8 w-8 text-slate-300 mx-auto mb-2" />
             <p className="text-sm text-slate-600 mb-3">
-              {fileName ? <span className="font-medium text-orange-600">{fileName}</span> : "Seleccioná tu archivo CSV"}
+              {fileName ? <span className="font-medium text-[#E8461E]">{fileName}</span> : "Seleccioná tu archivo CSV"}
             </p>
             <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
@@ -263,7 +263,7 @@ export default function ProductImportDialog({ open, onClose, onDone }) {
             <Button variant="outline" onClick={onClose} disabled={importing}>Cerrar</Button>
             {!result && validRows.length > 0 && (
               <Button
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-[#E8461E] hover:bg-[#c73a15]"
                 onClick={handleImport}
                 disabled={importing}
               >

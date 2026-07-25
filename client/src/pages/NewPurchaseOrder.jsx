@@ -79,11 +79,11 @@ export default function NewPurchaseOrder() {
               <div className="flex justify-between text-sm"><span className="text-slate-500">{t("items")}</span><span>{items.length}</span></div>
               <div className="flex justify-between text-sm"><span className="text-slate-500">{t("subtotal")}</span><span>{fmt(subtotal)}</span></div>
               <div className="flex justify-between text-sm"><span className="text-slate-500">{t("tax")} (8%)</span><span>{fmt(tax)}</span></div>
-              <div className="flex justify-between text-lg font-bold border-t pt-3"><span>{t("total")}</span><span className="text-orange-600">{fmt(total)}</span></div>
+              <div className="flex justify-between text-lg font-bold border-t pt-3"><span>{t("total")}</span><span className="text-[#E8461E]">{fmt(total)}</span></div>
             </CardContent>
           </Card>
           <Button className="w-full" variant="outline" onClick={() => handleSubmit(true)} disabled={!supplierId || !items.length || createMutation.isPending}>{t("saveAsDraft")}</Button>
-          <Button className="w-full bg-orange-600 hover:bg-orange-700" onClick={() => handleSubmit(false)} disabled={!supplierId || !items.length || createMutation.isPending}>{t("sendToSupplier")}</Button>
+          <Button className="w-full bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => handleSubmit(false)} disabled={!supplierId || !items.length || createMutation.isPending}>{t("sendToSupplier")}</Button>
         </div>
       </div>
     </div>

@@ -150,13 +150,13 @@ export default function AdminDashboard() {
             <StatCard icon={DollarSign} label="Total Facturado" value={formatCurrency(totalSale)}
               sub={`${filtered.length} órdenes`} color="text-slate-800" bg="bg-white" />
             <StatCard icon={ShoppingBag} label="Costo Productos" value={formatCurrency(totalProductCost)}
-              sub="Insumos y repuestos" color="text-orange-600" bg="bg-orange-50" />
+              sub="Insumos y repuestos" color="text-[#E8461E]" bg="bg-[#E8461E]/5" />
             <StatCard icon={Wrench} label="Costo Servicios" value={formatCurrency(totalLaborCost)}
               sub="Mano de obra" color="text-blue-600" bg="bg-blue-50" />
             <StatCard icon={TrendingUp} label="Utilidad" value={formatCurrency(totalProfit)}
               sub={`${margin}% margen s/productos`} color="text-green-600" bg="bg-green-50" />
             <StatCard icon={Percent} label="Margen Productos" value={`${margin}%`}
-              sub={totalProfit >= 0 ? "Rentable" : "Pérdida"} color={margin >= 0 ? "text-orange-600" : "text-red-600"} bg="bg-orange-50" />
+              sub={totalProfit >= 0 ? "Rentable" : "Pérdida"} color={margin >= 0 ? "text-[#E8461E]" : "text-red-600"} bg="bg-[#E8461E]/5" />
           </div>
 
           {/* Gráfico + Top servicios */}
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
                 <div className="space-y-3">
                   {topServices.map((s, i) => (
                     <div key={s.name} className="flex items-center gap-3">
-                      <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                      <span className="w-5 h-5 rounded-full bg-[#E8461E]/10 text-[#c73a15] text-[10px] font-bold flex items-center justify-center shrink-0">
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {services.map((s, i) => (
-                              <span key={i} className="bg-orange-50 text-orange-700 text-[10px] px-1.5 py-0.5 rounded-full border border-orange-100">
+                              <span key={i} className="bg-[#E8461E]/5 text-[#c73a15] text-[10px] px-1.5 py-0.5 rounded-full border border-[#E8461E]/10">
                                 {s.service_name}
                               </span>
                             ))}
@@ -270,7 +270,7 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3 text-right font-semibold text-slate-800">
                           {formatCurrency(o.total_sale)}
                         </td>
-                        <td className="px-4 py-3 text-right text-orange-600 font-medium">
+                        <td className="px-4 py-3 text-right text-[#E8461E] font-medium">
                           {formatCurrency(rowProdCost)}
                         </td>
                         <td className="px-4 py-3 text-right font-bold">
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button onClick={() => navigate(createPageUrl(`ServiceOrderDetail?id=${o.id}`))}
-                            className="text-slate-400 hover:text-orange-600 transition-colors">
+                            className="text-slate-400 hover:text-[#E8461E] transition-colors">
                             <ChevronRight className="h-4 w-4" />
                           </button>
                         </td>
@@ -298,7 +298,7 @@ export default function AdminDashboard() {
                     <tr className="bg-slate-50 font-semibold text-sm border-t-2 border-slate-200">
                       <td className="px-4 py-3 text-slate-600" colSpan={4}>Total ({filtered.length} órdenes)</td>
                       <td className="px-4 py-3 text-right text-slate-800">{formatCurrency(totalSale)}</td>
-                      <td className="px-4 py-3 text-right text-orange-600">{formatCurrency(totalProductCost)}</td>
+                      <td className="px-4 py-3 text-right text-[#E8461E]">{formatCurrency(totalProductCost)}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={totalProfit >= 0 ? "text-green-600" : "text-red-600"}>
                           {formatCurrency(totalProfit)}

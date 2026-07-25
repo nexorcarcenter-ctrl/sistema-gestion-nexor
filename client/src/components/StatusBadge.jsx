@@ -9,7 +9,7 @@ const STATUS_STYLES = {
   partial: "bg-amber-100 text-amber-700",
   draft: "bg-slate-100 text-slate-600",
   sent: "bg-blue-100 text-blue-700",
-  confirmed: "bg-orange-100 text-orange-700",
+  confirmed: "bg-[#E8461E]/10 text-[#c73a15]",
   cancelled: "bg-red-100 text-red-700",
   refunded: "bg-red-100 text-red-700",
   inactive: "bg-slate-100 text-slate-500",

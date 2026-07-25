@@ -4,6 +4,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        nexor: {
+          orange: "#E8461E",
+          lime: "#CCFF00",
+          dark: "#0D0D0F",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

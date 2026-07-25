@@ -17,7 +17,7 @@ export default function ReportSummaryCards({ products, purchaseOrders }) {
         <CardHeader><CardTitle className="text-sm">{t("inventorySummary")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between items-center"><span className="text-sm text-slate-500">{t("totalProducts")}</span><span className="font-bold">{products.length}</span></div>
-          <div className="flex justify-between items-center"><span className="text-sm text-slate-500">{t("inventoryValue")}</span><span className="font-bold text-orange-600">{fmt(inventoryValue)}</span></div>
+          <div className="flex justify-between items-center"><span className="text-sm text-slate-500">{t("inventoryValue")}</span><span className="font-bold text-[#E8461E]">{fmt(inventoryValue)}</span></div>
           <div className="flex justify-between items-center"><span className="text-sm text-slate-500">{t("lowStock")}</span><span className="font-bold text-amber-600">{lowStockCount}</span></div>
         </CardContent>
       </Card>

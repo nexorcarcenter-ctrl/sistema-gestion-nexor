@@ -106,7 +106,7 @@ export default function ServiceOrderDetail() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Logo solo visible al imprimir */}
       <div className="print-logo-header">
-        <img src="/logo-norvian.svg" alt="Norvian" style={{ height: "48px" }} />
+        <img src="/nexor-logo.svg" alt="Nexor" style={{ height: "48px" }} />
       </div>
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -125,7 +125,7 @@ export default function ServiceOrderDetail() {
                 {paymentStatusCfg.label}
               </span>
               {order.inspectionStatus === "inspected" ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border bg-orange-50 text-orange-700 border-orange-200">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border bg-[#E8461E]/5 text-[#c73a15] border-orange-200">
                   <ClipboardCheck className="h-3.5 w-3.5" />Inspeccionado
                 </span>
               ) : (
@@ -204,7 +204,7 @@ export default function ServiceOrderDetail() {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                  <Car className="h-4 w-4 text-orange-500" />Vehículo
+                  <Car className="h-4 w-4 text-[#E8461E]" />Vehículo
                 </h3>
                 <div className="space-y-1.5 text-sm">
                   {[
@@ -223,7 +223,7 @@ export default function ServiceOrderDetail() {
               </div>
               <div>
                 <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                  <User className="h-4 w-4 text-orange-500" />Cliente
+                  <User className="h-4 w-4 text-[#E8461E]" />Cliente
                 </h3>
                 <div className="space-y-1.5 text-sm">
                   {[
@@ -231,7 +231,7 @@ export default function ServiceOrderDetail() {
                     ["Teléfono", order.customerPhone || "-"],
                     ["Ingreso", formatDate(order.entryDate)],
                     ["Hora cita", order.appointmentTime ? (
-                      <span className="inline-flex items-center gap-1 font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200 text-xs">
+                      <span className="inline-flex items-center gap-1 font-bold text-[#c73a15] bg-[#E8461E]/5 px-2 py-0.5 rounded-full border border-orange-200 text-xs">
                         <Clock className="h-3 w-3" />{order.appointmentTime} hs
                       </span>
                     ) : "-"],
@@ -256,7 +256,7 @@ export default function ServiceOrderDetail() {
           {/* Services */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
             <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-orange-500" />Servicios Realizados
+              <Wrench className="h-4 w-4 text-[#E8461E]" />Servicios Realizados
             </h3>
             {services.length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-4">Sin servicios registrados</p>
@@ -266,8 +266,8 @@ export default function ServiceOrderDetail() {
                   <div key={i} className="border border-slate-100 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center">
-                          <Wrench className="h-3.5 w-3.5 text-orange-600" />
+                        <div className="w-7 h-7 bg-[#E8461E]/10 rounded-lg flex items-center justify-center">
+                          <Wrench className="h-3.5 w-3.5 text-[#E8461E]" />
                         </div>
                         <span className="font-semibold text-slate-800">{svc.service_name}</span>
                       </div>
@@ -295,7 +295,7 @@ export default function ServiceOrderDetail() {
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-orange-500" />Pagos
+                <DollarSign className="h-4 w-4 text-[#E8461E]" />Pagos
               </h3>
               {order.paymentStatus !== "paid" && (
                 <Button size="sm" className="print:hidden" onClick={() => setShowPaymentDialog(true)}>
@@ -359,7 +359,7 @@ export default function ServiceOrderDetail() {
           <div className={`bg-white rounded-xl border border-slate-200 p-5 shadow-sm ${inspectionData ? "print:break-before-page" : ""}`}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-                <ClipboardCheck className="h-4 w-4 text-orange-500" />Inspección del Vehículo
+                <ClipboardCheck className="h-4 w-4 text-[#E8461E]" />Inspección del Vehículo
               </h3>
               {order.inspectionStatus !== "inspected" ? (
                 <button
@@ -371,7 +371,7 @@ export default function ServiceOrderDetail() {
               ) : (
                 <button
                   onClick={() => navigate(createPageUrl(`InspectionPage?id=${orderId}`))}
-                  className="print:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-semibold transition-colors"
+                  className="print:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E8461E]/5 hover:bg-[#E8461E]/10 border border-orange-200 text-[#c73a15] text-xs font-semibold transition-colors"
                 >
                   <ClipboardCheck className="h-3.5 w-3.5" />Ver / Editar
                 </button>

@@ -37,7 +37,7 @@ function UserFooter({ user, onLogout }) {
   return (
     <div className="border-t border-white/10 p-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-full bg-[#F5691F] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-[#E8461E] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
           {initials}
         </div>
         <div className="flex-1 min-w-0">
@@ -65,7 +65,7 @@ function SidebarContent({ currentPageName, onLinkClick, t, isAdmin, user, onLogo
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center gap-2.5">
           <div>
-            <img src="/norvian-logo.png" alt="Norvian" className="h-5 w-auto mb-0.5" />
+            <img src="/nexor-logo.svg" alt="Nexor" className="h-5 w-auto mb-0.5" />
             <p className="text-[10px] text-slate-400">Sistema de gestión</p>
           </div>
         </div>
@@ -79,9 +79,9 @@ function SidebarContent({ currentPageName, onLinkClick, t, isAdmin, user, onLogo
                 <Link key={key} to={createPageUrl(page)}
                   onClick={onLinkClick}
                   className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors mb-0.5 ${
-                    isActive(page) ? "bg-[#F5691F]/20 text-[#F5691F]" : "text-slate-400 hover:text-white hover:bg-white/5"
+                    isActive(page) ? "bg-[#E8461E]/20 text-[#E8461E]" : "text-slate-400 hover:text-white hover:bg-white/5"
                   }`}>
-                  <Icon className={`h-4 w-4 ${isActive(page) ? "text-[#F5691F]" : ""}`} />
+                  <Icon className={`h-4 w-4 ${isActive(page) ? "text-[#E8461E]" : ""}`} />
                   {t(key)}
                 </Link>
               ))}
@@ -115,7 +115,7 @@ function LayoutContent({ children, currentPageName }) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Desktop sidebar */}
-      <aside className="w-56 fixed inset-y-0 left-0 bg-[#212121] text-white z-30 hidden md:flex flex-col print:hidden">
+      <aside className="w-56 fixed inset-y-0 left-0 bg-[#0D0D0F] text-white z-30 hidden md:flex flex-col print:hidden">
         <SidebarContent
           currentPageName={currentPageName}
           onLinkClick={() => {}}
@@ -132,10 +132,10 @@ function LayoutContent({ children, currentPageName }) {
       )}
 
       {/* Mobile sidebar */}
-      <aside className={`fixed inset-y-0 left-0 w-64 bg-[#212121] text-white z-50 flex flex-col md:hidden transition-transform duration-300 print:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 w-64 bg-[#0D0D0F] text-white z-50 flex flex-col md:hidden transition-transform duration-300 print:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            <img src="/norvian-logo.png" alt="Norvian" className="h-5 w-auto" />
+            <img src="/nexor-logo.svg" alt="Nexor" className="h-5 w-auto" />
           </div>
           <button onClick={() => setMobileOpen(false)} className="text-slate-400 hover:text-white p-1">
             <X className="h-5 w-5" />
@@ -153,9 +153,9 @@ function LayoutContent({ children, currentPageName }) {
                     <Link key={key} to={createPageUrl(page)}
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors mb-0.5 ${
-                        active ? "bg-[#F5691F]/20 text-[#F5691F]" : "text-slate-400 hover:text-white hover:bg-white/5"
+                        active ? "bg-[#E8461E]/20 text-[#E8461E]" : "text-slate-400 hover:text-white hover:bg-white/5"
                       }`}>
-                      <Icon className={`h-4 w-4 ${active ? "text-[#F5691F]" : ""}`} />
+                      <Icon className={`h-4 w-4 ${active ? "text-[#E8461E]" : ""}`} />
                       {t(key)}
                     </Link>
                   );
@@ -169,12 +169,12 @@ function LayoutContent({ children, currentPageName }) {
 
       {/* Main content */}
       <main className="flex-1 md:ml-56 print:ml-0 min-h-screen">
-        <div className="md:hidden print:hidden flex items-center gap-3 px-4 py-3 bg-[#212121] text-white sticky top-0 z-20">
+        <div className="md:hidden print:hidden flex items-center gap-3 px-4 py-3 bg-[#0D0D0F] text-white sticky top-0 z-20">
           <button onClick={() => setMobileOpen(true)} className="text-slate-300 hover:text-white">
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <img src="/norvian-logo.png" alt="Norvian" className="h-5 w-auto" />
+            <img src="/nexor-logo.svg" alt="Nexor" className="h-5 w-auto" />
           </div>
           <button onClick={handleLogout} title="Cerrar sesión" className="text-slate-400 hover:text-red-400 transition-colors">
             <LogOut className="h-4 w-4" />

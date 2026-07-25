@@ -138,11 +138,11 @@ function ServiceTypeSelector({ value, onChange, onClose }) {
                   key={s.id}
                   onClick={() => { onChange(s.name); onClose(); }}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between ${
-                    value === s.name ? "bg-orange-50 text-orange-700 font-medium" : "text-slate-700 hover:bg-slate-50"
+                    value === s.name ? "bg-[#E8461E]/5 text-[#c73a15] font-medium" : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <span>{s.name}</span>
-                  {value === s.name && <Check className="h-4 w-4 text-orange-500" />}
+                  {value === s.name && <Check className="h-4 w-4 text-[#E8461E]" />}
                 </button>
               ))}
             </div>
@@ -160,7 +160,7 @@ function ServiceTypeSelector({ value, onChange, onClose }) {
                 autoFocus
                 onKeyDown={e => e.key === "Enter" && handleAddNew()}
               />
-              <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={handleAddNew} disabled={savingNew || !newName.trim()}>
+              <Button size="sm" className="bg-[#E8461E] hover:bg-[#E8461E]" onClick={handleAddNew} disabled={savingNew || !newName.trim()}>
                 {savingNew ? "..." : "Crear"}
               </Button>
               <Button size="sm" variant="outline" onClick={() => { setAdding(false); setNewName(""); }}>
@@ -170,7 +170,7 @@ function ServiceTypeSelector({ value, onChange, onClose }) {
           ) : (
             <button
               onClick={() => setAdding(true)}
-              className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium w-full py-1"
+              className="flex items-center gap-2 text-sm text-[#E8461E] hover:text-[#c73a15] font-medium w-full py-1"
             >
               <Plus className="h-4 w-4" />Agregar nuevo servicio
             </button>
@@ -231,7 +231,7 @@ function AppointmentForm({ initialDate, initialTime, appointment, prefill, onSav
           <div className="flex gap-2">
             <button
               onClick={() => setType("turno")}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${type === "turno" ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-600 border-slate-200 hover:border-orange-300"}`}
+              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${type === "turno" ? "bg-[#E8461E] text-white border-[#E8461E]" : "bg-white text-slate-600 border-slate-200 hover:border-orange-300"}`}
             >Turno</button>
             <button
               onClick={() => setType("recordatorio")}
@@ -373,7 +373,7 @@ function AppointmentForm({ initialDate, initialTime, appointment, prefill, onSav
             <Button
               onClick={handleSubmit}
               disabled={saving || !canSave}
-              className={`flex-1 ${type === "turno" ? "bg-orange-500 hover:bg-orange-600" : "bg-blue-500 hover:bg-blue-600"}`}
+              className={`flex-1 ${type === "turno" ? "bg-[#E8461E] hover:bg-[#E8461E]" : "bg-blue-500 hover:bg-blue-600"}`}
             >
               {saving ? "Guardando..." : isRescheduling ? "Reagendar" : isEditing ? "Guardar" : "Crear"}
             </Button>
@@ -414,7 +414,7 @@ function DayPanel({ date, appointments, onClose, onNewAtTime, onEditAppointment 
         </div>
         <div className="flex items-center gap-2">
           {!closed && (
-            <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={() => onNewAtTime(dateStr, "09:00")}>
+            <Button size="sm" className="bg-[#E8461E] hover:bg-[#E8461E]" onClick={() => onNewAtTime(dateStr, "09:00")}>
               <Plus className="h-3.5 w-3.5 mr-1" />Agregar
             </Button>
           )}
@@ -468,17 +468,17 @@ function TimeSlotRow({ slot, appointments, dateStr, onNew, onEdit }) {
             key={a.id}
             onClick={() => onEdit(a)}
             className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80 ${
-              a.type === "turno" ? "bg-orange-100 text-orange-800" : "bg-blue-100 text-blue-800"
+              a.type === "turno" ? "bg-[#E8461E]/10 text-orange-800" : "bg-blue-100 text-blue-800"
             } ${a.status === "cancelado" ? "opacity-50 line-through" : ""}`}
           >
             <span className="font-semibold">
               {a.type === "turno" ? (a.customerName || a.customer_name || "—") : (a.serviceDescription || a.service_description || "Recordatorio")}
             </span>
             {a.type === "turno" && (a.serviceDescription || a.service_description) && (
-              <span className="text-orange-600"> · {a.serviceDescription || a.service_description}</span>
+              <span className="text-[#E8461E]"> · {a.serviceDescription || a.service_description}</span>
             )}
             {(a.carPlate || a.car_plate) && (
-              <span className="text-orange-500"> · {a.carPlate || a.car_plate}</span>
+              <span className="text-[#E8461E]"> · {a.carPlate || a.car_plate}</span>
             )}
           </button>
         ))}
@@ -486,7 +486,7 @@ function TimeSlotRow({ slot, appointments, dateStr, onNew, onEdit }) {
       {appointments.length === 0 && (
         <button
           onClick={() => onNew(dateStr, slot)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-orange-400 flex-shrink-0"
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-[#E8461E] flex-shrink-0"
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -608,7 +608,7 @@ export default function AgendaPage() {
           <h1 className="text-2xl font-bold text-slate-800">Agenda</h1>
           <p className="text-sm text-slate-500">Turnos y recordatorios del taller</p>
         </div>
-        <Button className="bg-orange-500 hover:bg-orange-600" onClick={() => setFormState({ initialDate: todayStr, initialTime: "09:00", appointment: null })}>
+        <Button className="bg-[#E8461E] hover:bg-[#E8461E]" onClick={() => setFormState({ initialDate: todayStr, initialTime: "09:00", appointment: null })}>
           <Plus className="h-4 w-4 mr-2" />Nuevo Turno
         </Button>
       </div>
@@ -658,13 +658,13 @@ export default function AgendaPage() {
                   className={`relative flex flex-col items-center pt-2 pb-3 min-h-[72px] border-b border-r border-slate-100 transition-colors last:border-r-0
                     ${!current ? "bg-slate-50/50" : ""}
                     ${sunday ? "bg-red-50/30" : ""}
-                    ${isSelected ? "bg-orange-50" : "hover:bg-slate-50"}
+                    ${isSelected ? "bg-[#E8461E]/5" : "hover:bg-slate-50"}
                   `}
                 >
                   {/* Número del día */}
                   <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors
-                    ${isToday ? "bg-orange-500 text-white font-bold" : ""}
-                    ${isSelected && !isToday ? "bg-orange-100 text-orange-700" : ""}
+                    ${isToday ? "bg-[#E8461E] text-white font-bold" : ""}
+                    ${isSelected && !isToday ? "bg-[#E8461E]/10 text-[#c73a15]" : ""}
                     ${!isToday && !isSelected && current ? "text-slate-700" : ""}
                     ${!current ? "text-slate-300" : ""}
                     ${sunday && current && !isToday ? "text-red-400" : ""}
