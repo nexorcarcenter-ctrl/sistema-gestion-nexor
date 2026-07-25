@@ -4,29 +4,8 @@ const jwt = require("jsonwebtoken");
 const pool = require("../db");
 const authMiddleware = require("../middleware/auth");
 
-// Register
-router.post("/register", async (req, res) => {
-  try {
-    const { username, password, fullName, cargo } = req.body;
-    if (!username || !password) return res.status(400).json({ error: "Usuario y contraseña requeridos" });
-
-    const existing = await pool.query("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
-    if (existing.rows.length > 0) return res.status(400).json({ error: "El usuario ya está registrado" });
-
-    const hash = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      `INSERT INTO users (username, email, password_hash, full_name, cargo, role, created_at, updated_at)
-       VALUES ($1, $1, $2, $3, $4, 'user', NOW(), NOW()) RETURNING id, username, full_name, cargo, role`,
-      [username.toLowerCase(), hash, fullName || "", cargo || "otro"]
-    );
-    const user = result.rows[0];
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
-    res.json({ token, user: { id: user.id, username: user.username, fullName: user.full_name, cargo: user.cargo, role: user.role } });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error del servidor" });
-  }
-});
+// Register — deshabilitado, solo el admin puede crear usuarios desde el panel
+// router.post("/register", ...);
 
 // Login
 router.post("/login", async (req, res) => {
