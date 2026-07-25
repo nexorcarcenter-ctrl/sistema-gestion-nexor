@@ -41,8 +41,8 @@ function UserFooter({ user, onLogout }) {
           {initials}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-white truncate">{user?.fullName || user?.email || "Usuario"}</p>
-          <p className="text-[10px] text-slate-400 truncate">{CARGO_LABELS[user?.cargo] || user?.email || ""}</p>
+          <p className="text-xs font-medium text-white truncate">{user?.fullName || user?.username || "Usuario"}</p>
+          <p className="text-[10px] text-slate-400 truncate">{CARGO_LABELS[user?.cargo] || user?.username || ""}</p>
         </div>
         <button
           onClick={onLogout}

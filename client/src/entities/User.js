@@ -26,19 +26,19 @@ const User = {
     return apiFetch(`${API_BASE}/me`);
   },
 
-  async login(email, password) {
+  async login(username, password) {
     const data = await apiFetch(`${API_BASE}/login`, {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     });
     if (data.token) localStorage.setItem("token", data.token);
     return data.user;
   },
 
-  async register(email, password, fullName, cargo) {
+  async register(username, password, fullName, cargo) {
     const data = await apiFetch(`${API_BASE}/register`, {
       method: "POST",
-      body: JSON.stringify({ email, password, fullName, cargo }),
+      body: JSON.stringify({ username, password, fullName, cargo }),
     });
     if (data.token) localStorage.setItem("token", data.token);
     return data.user;
@@ -60,10 +60,10 @@ const User = {
     return apiFetch(`${API_BASE}/users`);
   },
 
-  async create(email, password, fullName, cargo) {
+  async create(username, password, fullName, cargo) {
     return apiFetch(`${API_BASE}/users`, {
       method: "POST",
-      body: JSON.stringify({ email, password, fullName, cargo }),
+      body: JSON.stringify({ username, password, fullName, cargo }),
     });
   },
 

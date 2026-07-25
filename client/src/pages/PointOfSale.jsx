@@ -76,7 +76,7 @@ export default function PointOfSale() {
   const completeSale = async () => {
     setIsProcessing(true);
     const saleNumber = `S-${Date.now().toString(36).toUpperCase()}`;
-    const cashier = currentUser?.fullName || currentUser?.email || "Unknown";
+    const cashier = currentUser?.fullName || currentUser?.username || "Unknown";
     await Sale.create({
       sale_number: saleNumber, sale_date: new Date().toISOString(), cashier,
       items_json: JSON.stringify(cart.map((i) => ({ product_id: i.id, product_name: i.name, sku: i.sku, quantity: i.quantity, unit_price: i.unit_price, discount: i.discount_pct, total: i.total }))),
