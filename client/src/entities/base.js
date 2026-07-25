@@ -9,7 +9,7 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function apiFetch(url, options = {}) {
+export async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -23,6 +23,11 @@ async function apiFetch(url, options = {}) {
     throw new Error(err.error || res.statusText);
   }
   return res.json();
+}
+
+export async function getSequence(type) {
+  const data = await apiFetch(`/api/sequence/${type}`);
+  return data.number;
 }
 
 export class BaseEntity {

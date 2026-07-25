@@ -5,6 +5,7 @@ import { createPageUrl } from "@/utils";
 import { PurchaseOrder } from "@/entities/PurchaseOrder";
 import { Product } from "@/entities/Product";
 import { Supplier } from "@/entities/Supplier";
+import { getSequence } from "@/entities/base";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +40,10 @@ export default function NewPurchaseOrder() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["purchase-orders"] }); navigate(createPageUrl("PurchaseOrders")); },
   });
 
-  const handleSubmit = (asDraft = true) => {
+  const handleSubmit = async (asDraft = true) => {
+    const poNumber = await getSequence("purchase_order");
     createMutation.mutate({
-      po_number: `PO-${Date.now().toString(36).toUpperCase()}`,
+      po_number: poNumber,
       order_date: new Date().toISOString().split("T")[0],
       supplier_id: supplierId, supplier_name: selectedSupplier?.name || "",
       items_json: JSON.stringify(items),

@@ -4,6 +4,7 @@ import { CashRegister } from "@/entities/CashRegister";
 import { ServiceOrder } from "@/entities/ServiceOrder";
 import { PaymentMethod } from "@/entities/PaymentMethod";
 import { Sale } from "@/entities/Sale";
+import { getSequence } from "@/entities/base";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -216,7 +217,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
         cash_register_id: cashRegister?.id || existingSale.cash_register_id || "",
       });
     } else {
-      const saleNumber = `V-${Date.now().toString().slice(-6)}`;
+      const saleNumber = await getSequence("sale");
       const newSale = await Sale.create({
         sale_number: saleNumber,
         sale_date: new Date().toISOString(),

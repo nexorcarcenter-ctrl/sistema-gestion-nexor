@@ -355,3 +355,24 @@ ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS car_mileage_exit NUMERIC DEF
 ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS exit_inspection_data TEXT;
 ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS exit_inspection_status TEXT DEFAULT 'pending';
 ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS exit_observations TEXT;
+
+-- Índices para rendimiento (idempotent)
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+CREATE INDEX IF NOT EXISTS idx_service_orders_status ON service_orders(status);
+CREATE INDEX IF NOT EXISTS idx_service_orders_order_number ON service_orders(order_number);
+CREATE INDEX IF NOT EXISTS idx_service_orders_customer_name ON service_orders(customer_name);
+CREATE INDEX IF NOT EXISTS idx_service_orders_car_plate ON service_orders(car_plate);
+CREATE INDEX IF NOT EXISTS idx_sales_sale_number ON sales(sale_number);
+CREATE INDEX IF NOT EXISTS idx_sales_sale_date ON sales(sale_date);
+CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status);
+CREATE INDEX IF NOT EXISTS idx_payments_service_order_id ON payments(service_order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_cash_register_id ON payments(cash_register_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product_id ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_created_at ON stock_movements(created_at);
+CREATE INDEX IF NOT EXISTS idx_cash_registers_date ON cash_registers(date);
+CREATE INDEX IF NOT EXISTS idx_cash_registers_status ON cash_registers(status);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_po_number ON purchase_orders(po_number);
+CREATE INDEX IF NOT EXISTS idx_remitos_remito_number ON remitos(remito_number);
