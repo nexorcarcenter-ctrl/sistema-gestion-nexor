@@ -518,7 +518,7 @@ export default function NewServiceOrder() {
                   <div className="relative mb-2">
                     <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                     <Input
-                      placeholder="Buscar tipo de servicio..."
+                      placeholder="Buscar o crear tipo de servicio..."
                       value={serviceSearch}
                       onChange={e => setServiceSearch(e.target.value)}
                       className="pl-8 h-8 text-sm"
@@ -526,15 +526,31 @@ export default function NewServiceOrder() {
                     />
                   </div>
                   <div className="max-h-40 overflow-y-auto space-y-1">
-                    {filteredServiceTypes.length === 0 ? (
-                      <p className="text-xs text-slate-400 p-2 text-center">Sin tipos de servicio. Creá uno en "Tipos de Servicio".</p>
-                    ) : filteredServiceTypes.map(st => (
+                    {filteredServiceTypes.map(st => (
                       <button key={st.id} onClick={() => { addService(st); setErrors(p => ({ ...p, services: "" })); }}
                         className="w-full text-left px-3 py-2 rounded-lg hover:bg-white text-sm font-medium text-slate-700 border border-transparent hover:border-orange-200 transition-colors flex items-center gap-2">
                         <Wrench className="h-3.5 w-3.5 text-[#E8461E] shrink-0" />
                         {st.name}
                       </button>
                     ))}
+                    {serviceSearch.trim() && !filteredServiceTypes.find(st => st.name.toLowerCase() === serviceSearch.trim().toLowerCase()) && (
+                      <button
+                        onClick={async () => {
+                          const name = serviceSearch.trim();
+                          const created = await ServiceType.create({ name, status: "active" });
+                          setServiceTypes(prev => [...prev, created]);
+                          addService({ id: created.id, name: created.name || name });
+                          setErrors(p => ({ ...p, services: "" }));
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-green-50 text-sm font-medium text-green-700 border border-dashed border-green-300 transition-colors flex items-center gap-2"
+                      >
+                        <Plus className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                        Crear "{serviceSearch.trim()}"
+                      </button>
+                    )}
+                    {filteredServiceTypes.length === 0 && !serviceSearch.trim() && (
+                      <p className="text-xs text-slate-400 p-2 text-center">Escribí el nombre del servicio para buscarlo o crearlo</p>
+                    )}
                   </div>
                 </div>
               )}
