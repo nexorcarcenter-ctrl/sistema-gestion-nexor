@@ -38,6 +38,12 @@ app.use("/api/auth", require("./routes/auth"));
 // Entity routes (protected)
 app.use("/api/entities", authMiddleware, require("./routes/entity"));
 
+// Stock routes (protected)
+app.use("/api/stock", authMiddleware, require("./routes/stock"));
+
+// Sequence routes (protected)
+app.use("/api/sequence", authMiddleware, require("./routes/sequence"));
+
 // Health check
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 

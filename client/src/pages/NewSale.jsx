@@ -6,6 +6,7 @@ import { Product } from "@/entities/Product";
 import { PaymentMethod } from "@/entities/PaymentMethod";
 import { CashRegister } from "@/entities/CashRegister";
 import { StockMovement } from "@/entities/StockMovement";
+import { getSequence } from "@/entities/base";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,7 +161,7 @@ export default function NewSale() {
     if (!canSave) return;
     setSaving(true);
 
-    const saleNumber = `V-${Date.now().toString().slice(-6)}`;
+    const saleNumber = await getSequence("sale");
     const paymentsJson = payments.map(p => ({
       ...p,
       amount_uyu: p.currency === "USD" ? p.amount * (parseFloat(exchangeRate) || 40) : p.amount,
@@ -187,27 +188,19 @@ export default function NewSale() {
       notes,
     });
 
-    // Update stock for each product
-    for (const item of cartItems) {
-      if (item.product_id) {
-        const prod = products.find(p => p.id === item.product_id);
-        if (prod) {
-          const newStock = Math.max(0, (prod.stock_quantity || 0) - item.quantity);
-          await Product.update(item.product_id, { stock_quantity: newStock });
-          await StockMovement.create({
-            product_id: item.product_id,
-            product_name: item.product_name,
-            sku: item.sku || "",
-            movement_type: "sale",
-            quantity: -item.quantity,
-            previous_stock: prod.stock_quantity || 0,
-            new_stock: newStock,
-            reference_type: "sale",
-            reference_number: saleNumber,
-            reason: "Venta directa",
-          });
-        }
-      }
+    // Update stock for each product (atomic server-side)
+    const stockMovements = cartItems
+      .filter(item => item.product_id)
+      .map(item => ({
+        product_id: item.product_id,
+        movement_type: "sale",
+        quantity: -item.quantity,
+        reference_type: "sale",
+        reference_number: saleNumber,
+        reason: "Venta directa",
+      }));
+    if (stockMovements.length > 0) {
+      await StockMovement.moveBulk(stockMovements);
     }
 
     // Update cash register

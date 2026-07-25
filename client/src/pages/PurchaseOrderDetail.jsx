@@ -31,16 +31,24 @@ export default function PurchaseOrderDetail() {
   const receiveMutation = useMutation({
     mutationFn: async () => {
       const items = JSON.parse(order.items_json || "[]");
+      // Update stock atomically (server-side transaction)
+      const stockMovements = items
+        .filter(item => item.product_id)
+        .map(item => ({
+          product_id: item.product_id,
+          movement_type: "purchase",
+          quantity: item.quantity,
+          reference_type: "purchase_order",
+          reference_number: order.po_number,
+          reason: t("receiveOrder"),
+        }));
+      if (stockMovements.length > 0) {
+        await StockMovement.moveBulk(stockMovements);
+      }
+      // Update cost_price separately
       for (const item of items) {
-        const product = products.find((p) => p.id === item.product_id);
-        if (product) {
-          const newStock = (product.stock_quantity || 0) + item.quantity;
-          await Product.update(item.product_id, { stock_quantity: newStock, cost_price: item.unit_cost });
-          await StockMovement.create({
-            product_id: item.product_id, product_name: item.product_name, sku: item.sku, movement_type: "purchase", quantity: item.quantity,
-            previous_stock: product.stock_quantity || 0, new_stock: newStock, unit_cost: item.unit_cost,
-            reference_type: "purchase_order", reference_number: order.po_number, reason: t("receiveOrder"),
-          });
+        if (item.product_id && item.unit_cost) {
+          await Product.update(item.product_id, { cost_price: item.unit_cost });
         }
       }
       await PurchaseOrder.update(orderId, { status: "received", received_date: new Date().toISOString().split("T")[0] });

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/entities/Product";
 import { Sale } from "@/entities/Sale";
 import { StockMovement } from "@/entities/StockMovement";
+import { getSequence } from "@/entities/base";
 import { Category } from "@/entities/Category";
 import { CashRegister } from "@/entities/CashRegister";
 import User from "@/entities/User.js";
@@ -75,7 +76,7 @@ export default function PointOfSale() {
 
   const completeSale = async () => {
     setIsProcessing(true);
-    const saleNumber = `S-${Date.now().toString(36).toUpperCase()}`;
+    const saleNumber = await getSequence("pos_sale");
     const cashier = currentUser?.fullName || currentUser?.username || "Unknown";
     await Sale.create({
       sale_number: saleNumber, sale_date: new Date().toISOString(), cashier,
@@ -83,13 +84,17 @@ export default function PointOfSale() {
       items_count: cart.reduce((s, i) => s + i.quantity, 0), subtotal, tax_amount: 0, discount_amount: totalDiscount, total,
       payment_method: paymentMethod, payment_status: "paid", amount_paid: paymentMethod === "cash" ? parseFloat(amountPaid) || total : total, change_given: change, status: "completed",
     });
-    for (const item of cart) {
-      const product = products.find((p) => p.id === item.id);
-      if (product) {
-        const ns = product.stock_quantity - item.quantity;
-        await Product.update(item.id, { stock_quantity: ns });
-        await StockMovement.create({ product_id: item.id, product_name: item.name, sku: item.sku, movement_type: "sale", quantity: -item.quantity, previous_stock: product.stock_quantity, new_stock: ns, reference_type: "sale", reference_number: saleNumber, reason: "POS Sale" });
-      }
+    // Update stock (atomic server-side)
+    const stockMovements = cart.map(item => ({
+      product_id: item.id,
+      movement_type: "sale",
+      quantity: -item.quantity,
+      reference_type: "sale",
+      reference_number: saleNumber,
+      reason: "POS Sale",
+    }));
+    if (stockMovements.length > 0) {
+      await StockMovement.moveBulk(stockMovements);
     }
     queryClient.invalidateQueries({ queryKey: ["products"] }); queryClient.invalidateQueries({ queryKey: ["sales"] }); queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
     setIsProcessing(false); setShowPayment(false); setShowSuccess(true);

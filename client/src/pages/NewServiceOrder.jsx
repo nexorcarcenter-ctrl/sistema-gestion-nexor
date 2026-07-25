@@ -5,6 +5,7 @@ import { ServiceOrder } from "@/entities/ServiceOrder";
 import { ServiceType } from "@/entities/ServiceType";
 import { Product } from "@/entities/Product";
 import { StockMovement } from "@/entities/StockMovement";
+import { getSequence } from "@/entities/base";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -296,7 +297,7 @@ export default function NewServiceOrder() {
         labor_cost: parseFloat(s.labor_cost) || 0,
       }));
 
-      const orderNumber = editId ? undefined : `OS-${Date.now().toString().slice(-6)}`;
+      const orderNumber = editId ? undefined : await getSequence("service_order");
       const data = {
         ...form,
         car_year: form.car_year ? parseInt(form.car_year) : null,
@@ -312,28 +313,20 @@ export default function NewServiceOrder() {
       if (editId) {
         await ServiceOrder.update(editId, data);
       } else {
-        for (const svc of services) {
-          for (const p of svc.products) {
-            if (p.product_id) {
-              const prod = await Product.get(p.product_id);
-              if (prod) {
-                const newStock = Math.max(0, (prod.stock_quantity || 0) - p.quantity);
-                await Product.update(p.product_id, { stock_quantity: newStock });
-                await StockMovement.create({
-                  product_id: p.product_id,
-                  product_name: p.product_name,
-                  sku: prod.sku || "",
-                  movement_type: "sale",
-                  quantity: -p.quantity,
-                  previous_stock: prod.stock_quantity || 0,
-                  new_stock: newStock,
-                  reference_type: "sale",
-                  reference_number: data.order_number || "",
-                  reason: "Orden de servicio",
-                });
-              }
-            }
-          }
+        // Update stock atomically (server-side transaction)
+        const stockMovements = services
+          .flatMap(svc => svc.products)
+          .filter(p => p.product_id)
+          .map(p => ({
+            product_id: p.product_id,
+            movement_type: "sale",
+            quantity: -p.quantity,
+            reference_type: "sale",
+            reference_number: data.order_number || "",
+            reason: "Orden de servicio",
+          }));
+        if (stockMovements.length > 0) {
+          await StockMovement.moveBulk(stockMovements);
         }
         await ServiceOrder.create(data);
       }

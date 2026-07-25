@@ -81,17 +81,10 @@ export default function Products() {
   });
 
   const handleAddStock = async (product, qty) => {
-    const prevStock = Number(product.stockQuantity) || 0;
-    const newStock = prevStock + qty;
-    await Product.update(product.id, { stock_quantity: newStock });
-    await StockMovement.create({
+    await StockMovement.move({
       product_id: product.id,
-      product_name: product.name,
-      sku: product.sku || "",
       movement_type: "restock",
       quantity: qty,
-      previous_stock: prevStock,
-      new_stock: newStock,
       reference_type: "manual",
       reason: "Ingreso manual de stock",
     });

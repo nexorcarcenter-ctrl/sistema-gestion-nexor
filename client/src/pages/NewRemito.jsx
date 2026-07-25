@@ -4,6 +4,8 @@ import { createPageUrl } from "@/utils";
 import { Remito } from "@/entities/Remito";
 import { ServiceOrder } from "@/entities/ServiceOrder";
 import { Product } from "@/entities/Product";
+import { StockMovement } from "@/entities/StockMovement";
+import { getSequence } from "@/entities/base";
 import User from "@/entities/User";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,7 +149,7 @@ export default function NewRemito() {
     if (editId) {
       await Remito.update(editId, data);
     } else {
-      const remitoNumber = `REM-${Date.now().toString().slice(-6)}`;
+      const remitoNumber = await getSequence("remito");
       await Remito.create({ ...data, remito_number: remitoNumber });
     }
     setSaving(false);
@@ -157,17 +159,21 @@ export default function NewRemito() {
   const handleIssue = async () => {
     setIssuing(true);
     const data = buildData();
-    const remitoNumber = editId ? undefined : `REM-${Date.now().toString().slice(-6)}`;
+    const remitoNumber = editId ? undefined : await getSequence("remito");
 
-    // Descontar stock
-    for (const item of items) {
-      if (item.product_id) {
-        const prod = products.find(p => p.id === item.product_id);
-        if (prod) {
-          const newStock = Math.max(0, (prod.stock_quantity || 0) - (item.quantity || 1));
-          await Product.update(item.product_id, { stock_quantity: newStock });
-        }
-      }
+    // Descontar stock (atomic server-side)
+    const stockMovements = items
+      .filter(item => item.product_id)
+      .map(item => ({
+        product_id: item.product_id,
+        movement_type: "sale",
+        quantity: -(item.quantity || 1),
+        reference_type: "remito",
+        reference_number: remitoNumber || "",
+        reason: "Remito",
+      }));
+    if (stockMovements.length > 0) {
+      await StockMovement.moveBulk(stockMovements);
     }
 
     const finalData = { ...data, status: "issued", ...(remitoNumber ? { remito_number: remitoNumber } : {}) };

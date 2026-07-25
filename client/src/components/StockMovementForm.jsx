@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { StockMovement } from "@/entities/StockMovement";
-import { Product } from "@/entities/Product";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,14 +16,13 @@ export default function StockMovementForm({ open, onOpenChange, products }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const product = products.find((p) => p.id === data.product_id);
-      if (!product) return;
       const qty = data.movement_type === "adjustment" ? data.quantity : (["sale", "damage"].includes(data.movement_type) ? -Math.abs(data.quantity) : Math.abs(data.quantity));
-      const newStock = Math.max(0, (product.stock_quantity || 0) + qty);
-      await Product.update(data.product_id, { stock_quantity: newStock });
-      await StockMovement.create({
-        product_id: product.id, product_name: product.name, sku: product.sku, movement_type: data.movement_type, quantity: qty,
-        previous_stock: product.stock_quantity || 0, new_stock: newStock, reference_type: "manual", reason: data.reason,
+      await StockMovement.move({
+        product_id: data.product_id,
+        movement_type: data.movement_type,
+        quantity: qty,
+        reference_type: "manual",
+        reason: data.reason,
       });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["stock-movements"] }); queryClient.invalidateQueries({ queryKey: ["products"] }); onOpenChange(false); setForm({ product_id: "", movement_type: "adjustment", quantity: 0, reason: "" }); },
