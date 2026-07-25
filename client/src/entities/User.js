@@ -60,10 +60,10 @@ const User = {
     return apiFetch(`${API_BASE}/users`);
   },
 
-  async create(username, password, fullName, cargo) {
+  async create(username, password, fullName, cargo, role) {
     return apiFetch(`${API_BASE}/users`, {
       method: "POST",
-      body: JSON.stringify({ username, password, fullName, cargo }),
+      body: JSON.stringify({ username, password, fullName, cargo, role }),
     });
   },
 

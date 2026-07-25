@@ -9,11 +9,11 @@ import { Users, Plus, Edit2, KeyRound, PowerOff, Power, ShieldCheck, User as Use
 const CARGO_OPTIONS = ["Técnico", "Vendedor", "Administrativo", "Gerente", "otro"];
 
 function UserFormDialog({ open, onClose, onSave, saving, error }) {
-  const [form, setForm] = useState({ fullName: "", username: "", password: "", cargo: "Técnico" });
+  const [form, setForm] = useState({ fullName: "", username: "", password: "", cargo: "Técnico", role: "user" });
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    if (open) setForm({ fullName: "", username: "", password: "", cargo: "Técnico" });
+    if (open) setForm({ fullName: "", username: "", password: "", cargo: "Técnico", role: "user" });
   }, [open]);
 
   return (
@@ -47,6 +47,17 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
               {CARGO_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          <div>
+            <Label>Rol</Label>
+            <select
+              value={form.role}
+              onChange={e => update("role", e.target.value)}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="user">Colaborador</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -65,11 +76,11 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
 }
 
 function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
-  const [form, setForm] = useState({ fullName: "", username: "", cargo: "" });
+  const [form, setForm] = useState({ fullName: "", username: "", cargo: "", role: "user" });
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    if (user) setForm({ fullName: user.fullName || "", username: user.username || "", cargo: user.cargo || "otro" });
+    if (user) setForm({ fullName: user.fullName || "", username: user.username || "", cargo: user.cargo || "otro", role: user.role || "user" });
   }, [user]);
 
   return (
@@ -97,6 +108,17 @@ function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               {CARGO_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label>Rol</Label>
+            <select
+              value={form.role}
+              onChange={e => update("role", e.target.value)}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="user">Colaborador</option>
+              <option value="admin">Admin</option>
             </select>
           </div>
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
@@ -240,7 +262,7 @@ export default function UsersPage() {
   const handleCreate = async (form) => {
     setSaving(true); setError("");
     try {
-      await User.create(form.username, form.password, form.fullName, form.cargo);
+      await User.create(form.username, form.password, form.fullName, form.cargo, form.role);
       setShowCreate(false);
       load();
     } catch (e) {
@@ -253,7 +275,7 @@ export default function UsersPage() {
   const handleEdit = async (form) => {
     setSaving(true); setError("");
     try {
-      await User.updateUser(editUser.id, { fullName: form.fullName, username: form.username, cargo: form.cargo, isActive: editUser.isActive });
+      await User.updateUser(editUser.id, { fullName: form.fullName, username: form.username, cargo: form.cargo, role: form.role, isActive: editUser.isActive });
       setEditUser(null);
       load();
     } catch (e) {
@@ -338,7 +360,7 @@ export default function UsersPage() {
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
-                    <UserIcon className="h-3 w-3" />Empleado
+                    <UserIcon className="h-3 w-3" />Colaborador
                   </span>
                 )}
                 {u.isActive ? (
