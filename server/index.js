@@ -1,13 +1,34 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
 const pool = require("./db");
 const fs = require("fs");
 
 const app = express();
-app.use(cors());
+
+// CORS — en producción solo acepta requests del mismo origen (SPA servida por Express)
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : [];
+app.use(cors({
+  origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+  credentials: true
+}));
+
 app.use(express.json({ limit: "10mb" }));
+
+// Rate limiting para login y PIN (máx 10 intentos por IP en 15 min)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Demasiados intentos. Intentá de nuevo en 15 minutos." },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/verify-pin", authLimiter);
 
 const authMiddleware = require("./middleware/auth");
 
