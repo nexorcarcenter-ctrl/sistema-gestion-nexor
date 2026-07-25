@@ -102,18 +102,19 @@ router.get("/users", authMiddleware, requireAdmin, async (req, res) => {
 // Crear usuario (sin auto-login)
 router.post("/users", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { username, password, fullName, cargo } = req.body;
+    const { username, password, fullName, cargo, role } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Usuario y contraseña requeridos" });
 
     const existing = await pool.query("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (existing.rows.length > 0) return res.status(400).json({ error: "El usuario ya está registrado" });
 
+    const validRole = role === "admin" ? "admin" : "user";
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO users (username, email, password_hash, full_name, cargo, role, is_active, created_at, updated_at)
-       VALUES ($1, $1, $2, $3, $4, 'user', TRUE, NOW(), NOW())
+       VALUES ($1, $1, $2, $3, $4, $5, TRUE, NOW(), NOW())
        RETURNING id, username, full_name, cargo, role, is_active`,
-      [username.toLowerCase(), hash, fullName || "", cargo || "otro"]
+      [username.toLowerCase(), hash, fullName || "", cargo || "otro", validRole]
     );
     const u = result.rows[0];
     res.json({ id: u.id, username: u.username, fullName: u.full_name, cargo: u.cargo, role: u.role, isActive: true });
@@ -126,9 +127,13 @@ router.post("/users", authMiddleware, requireAdmin, async (req, res) => {
 // Actualizar usuario (nombre, cargo, username, activar/desactivar)
 router.put("/users/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { fullName, cargo, isActive, username } = req.body;
+    const { fullName, cargo, isActive, username, role } = req.body;
     const fields = ["full_name = $1", "cargo = $2", "is_active = $3", "updated_at = NOW()"];
     const values = [fullName, cargo, isActive !== false];
+    if (role && (role === "admin" || role === "user")) {
+      fields.push(`role = $${values.length + 1}`);
+      values.push(role);
+    }
     if (username) {
       const dup = await pool.query("SELECT id FROM users WHERE username = $1 AND id != $2", [username.toLowerCase(), req.params.id]);
       if (dup.rows.length > 0) return res.status(400).json({ error: "Ese usuario ya está en uso" });
