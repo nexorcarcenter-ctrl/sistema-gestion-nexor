@@ -4,7 +4,7 @@ import User from "@/entities/User";
 
 export default function Login() {
   const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ email: "", password: "", fullName: "", cargo: "otro" });
+  const [form, setForm] = useState({ username: "", password: "", fullName: "", cargo: "otro" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -14,9 +14,9 @@ export default function Login() {
     setLoading(true);
     try {
       if (mode === "login") {
-        await User.login(form.email, form.password);
+        await User.login(form.username, form.password);
       } else {
-        await User.register(form.email, form.password, form.fullName, form.cargo);
+        await User.register(form.username, form.password, form.fullName, form.cargo);
       }
       window.location.href = "/";
     } catch (err) {
@@ -67,10 +67,10 @@ export default function Login() {
               </>
             )}
             <input
-              type="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              type="text"
+              placeholder="Usuario"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
               required
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
             />

@@ -48,10 +48,13 @@ async function seedAdmin() {
     if (rows.length === 0) {
       const hash = await bcrypt.hash("admin123", 10);
       await pool.query(
-        `INSERT INTO users (email, password_hash, full_name, cargo, role) VALUES ($1, $2, $3, $4, 'admin')`,
-        ["admin@taller.com", hash, "Admin", "admin"]
+        `INSERT INTO users (username, email, password_hash, full_name, cargo, role) VALUES ($1, $2, $3, $4, $5, 'admin')`,
+        ["admin", "admin@taller.com", hash, "Admin", "admin"]
       );
-      console.log("✓ Usuario admin creado — email: admin@taller.com / pass: admin123");
+      console.log("✓ Usuario admin creado — usuario: admin / pass: admin123");
+    } else {
+      // Backfill: asignar username a usuarios que no tengan
+      await pool.query("UPDATE users SET username = email WHERE username IS NULL");
     }
   } catch (err) {
     console.error("Seed error:", err.message);

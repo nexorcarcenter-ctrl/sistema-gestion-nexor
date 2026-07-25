@@ -9,11 +9,11 @@ import { Users, Plus, Edit2, KeyRound, PowerOff, Power, ShieldCheck, User as Use
 const CARGO_OPTIONS = ["Técnico", "Vendedor", "Administrativo", "Gerente", "otro"];
 
 function UserFormDialog({ open, onClose, onSave, saving, error }) {
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", cargo: "Técnico" });
+  const [form, setForm] = useState({ fullName: "", username: "", password: "", cargo: "Técnico" });
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    if (open) setForm({ fullName: "", email: "", password: "", cargo: "Técnico" });
+    if (open) setForm({ fullName: "", username: "", password: "", cargo: "Técnico" });
   }, [open]);
 
   return (
@@ -30,8 +30,8 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
             <Input placeholder="Ej: Juan Pérez" value={form.fullName} onChange={e => update("fullName", e.target.value)} />
           </div>
           <div>
-            <Label>Email</Label>
-            <Input type="email" placeholder="Ej: juan@taller.com" value={form.email} onChange={e => update("email", e.target.value)} />
+            <Label>Usuario</Label>
+            <Input type="text" placeholder="Ej: juan" value={form.username} onChange={e => update("username", e.target.value)} />
           </div>
           <div>
             <Label>Contraseña</Label>
@@ -53,7 +53,7 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
             <Button
               className="bg-orange-600 hover:bg-orange-700"
               onClick={() => onSave(form)}
-              disabled={saving || !form.fullName || !form.email || !form.password}
+              disabled={saving || !form.fullName || !form.username || !form.password}
             >
               {saving ? "Creando..." : "Crear Usuario"}
             </Button>
@@ -65,11 +65,11 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
 }
 
 function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
-  const [form, setForm] = useState({ fullName: "", email: "", cargo: "" });
+  const [form, setForm] = useState({ fullName: "", username: "", cargo: "" });
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    if (user) setForm({ fullName: user.fullName || "", email: user.email || "", cargo: user.cargo || "otro" });
+    if (user) setForm({ fullName: user.fullName || "", username: user.username || "", cargo: user.cargo || "otro" });
   }, [user]);
 
   return (
@@ -86,8 +86,8 @@ function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
             <Input value={form.fullName} onChange={e => update("fullName", e.target.value)} />
           </div>
           <div>
-            <Label>Email</Label>
-            <Input type="email" value={form.email} onChange={e => update("email", e.target.value)} />
+            <Label>Usuario</Label>
+            <Input type="text" value={form.username} onChange={e => update("username", e.target.value)} />
           </div>
           <div>
             <Label>Cargo</Label>
@@ -102,7 +102,7 @@ function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => onSave(form)} disabled={saving || !form.fullName || !form.email}>
+            <Button className="bg-orange-600 hover:bg-orange-700" onClick={() => onSave(form)} disabled={saving || !form.fullName || !form.username}>
               {saving ? "Guardando..." : "Guardar"}
             </Button>
           </div>
@@ -240,7 +240,7 @@ export default function UsersPage() {
   const handleCreate = async (form) => {
     setSaving(true); setError("");
     try {
-      await User.create(form.email, form.password, form.fullName, form.cargo);
+      await User.create(form.username, form.password, form.fullName, form.cargo);
       setShowCreate(false);
       load();
     } catch (e) {
@@ -253,7 +253,7 @@ export default function UsersPage() {
   const handleEdit = async (form) => {
     setSaving(true); setError("");
     try {
-      await User.updateUser(editUser.id, { fullName: form.fullName, email: form.email, cargo: form.cargo, isActive: editUser.isActive });
+      await User.updateUser(editUser.id, { fullName: form.fullName, username: form.username, cargo: form.cargo, isActive: editUser.isActive });
       setEditUser(null);
       load();
     } catch (e) {
@@ -281,7 +281,7 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`¿Eliminar a ${user.fullName || user.email}? Esta acción no se puede deshacer.`)) return;
+    if (!window.confirm(`¿Eliminar a ${user.fullName || user.username}? Esta acción no se puede deshacer.`)) return;
     try {
       await User.deleteUser(user.id);
       load();
@@ -328,7 +328,7 @@ export default function UsersPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-800 truncate">{u.fullName || "—"}</p>
-                  <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                  <p className="text-xs text-slate-400 truncate">{u.username}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">

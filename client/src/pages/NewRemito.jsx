@@ -138,7 +138,7 @@ export default function NewRemito() {
     car_brand: selectedOrder?.car_brand || "",
     car_model: selectedOrder?.car_model || "",
     items: JSON.stringify(items),
-    issued_by: currentUser?.email || "",
+    issued_by: currentUser?.username || "",
   });
 
   const handleSave = async () => {

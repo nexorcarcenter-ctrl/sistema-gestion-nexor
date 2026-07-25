@@ -7,21 +7,21 @@ const authMiddleware = require("../middleware/auth");
 // Register
 router.post("/register", async (req, res) => {
   try {
-    const { email, password, fullName, cargo } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email y contraseña requeridos" });
+    const { username, password, fullName, cargo } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Usuario y contraseña requeridos" });
 
-    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
-    if (existing.rows.length > 0) return res.status(400).json({ error: "El email ya está registrado" });
+    const existing = await pool.query("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
+    if (existing.rows.length > 0) return res.status(400).json({ error: "El usuario ya está registrado" });
 
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, full_name, cargo, role, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, 'user', NOW(), NOW()) RETURNING id, email, full_name, cargo, role`,
-      [email.toLowerCase(), hash, fullName || "", cargo || "otro"]
+      `INSERT INTO users (username, email, password_hash, full_name, cargo, role, created_at, updated_at)
+       VALUES ($1, $1, $2, $3, $4, 'user', NOW(), NOW()) RETURNING id, username, full_name, cargo, role`,
+      [username.toLowerCase(), hash, fullName || "", cargo || "otro"]
     );
     const user = result.rows[0];
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
-    res.json({ token, user: { id: user.id, email: user.email, fullName: user.full_name, cargo: user.cargo, role: user.role } });
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    res.json({ token, user: { id: user.id, username: user.username, fullName: user.full_name, cargo: user.cargo, role: user.role } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error del servidor" });
@@ -31,10 +31,10 @@ router.post("/register", async (req, res) => {
 // Login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email y contraseña requeridos" });
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Usuario y contraseña requeridos" });
 
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+    const result = await pool.query("SELECT * FROM users WHERE username = $1", [username.toLowerCase()]);
     if (result.rows.length === 0) return res.status(401).json({ error: "Credenciales inválidas" });
 
     const user = result.rows[0];
@@ -42,8 +42,8 @@ router.post("/login", async (req, res) => {
     if (!valid) return res.status(401).json({ error: "Credenciales inválidas" });
     if (user.is_active === false) return res.status(403).json({ error: "Usuario desactivado. Contactá al administrador." });
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
-    res.json({ token, user: { id: user.id, email: user.email, fullName: user.full_name, cargo: user.cargo, role: user.role } });
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    res.json({ token, user: { id: user.id, username: user.username, fullName: user.full_name, cargo: user.cargo, role: user.role } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error del servidor" });
@@ -53,10 +53,10 @@ router.post("/login", async (req, res) => {
 // Me
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, email, full_name, cargo, role FROM users WHERE id = $1", [req.user.id]);
+    const result = await pool.query("SELECT id, username, full_name, cargo, role FROM users WHERE id = $1", [req.user.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: "Usuario no encontrado" });
     const u = result.rows[0];
-    res.json({ id: u.id, email: u.email, fullName: u.full_name, cargo: u.cargo, role: u.role });
+    res.json({ id: u.id, username: u.username, fullName: u.full_name, cargo: u.cargo, role: u.role });
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
   }
@@ -88,10 +88,10 @@ function requireAdmin(req, res, next) {
 router.get("/users", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, email, full_name, cargo, role, is_active, created_at FROM users ORDER BY created_at ASC"
+      "SELECT id, username, full_name, cargo, role, is_active, created_at FROM users ORDER BY created_at ASC"
     );
     res.json(result.rows.map(u => ({
-      id: u.id, email: u.email, fullName: u.full_name,
+      id: u.id, username: u.username, fullName: u.full_name,
       cargo: u.cargo, role: u.role, isActive: u.is_active !== false, createdAt: u.created_at
     })));
   } catch (err) {
@@ -102,48 +102,47 @@ router.get("/users", authMiddleware, requireAdmin, async (req, res) => {
 // Crear usuario (sin auto-login)
 router.post("/users", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { email, password, fullName, cargo } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email y contraseña requeridos" });
+    const { username, password, fullName, cargo } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Usuario y contraseña requeridos" });
 
-    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
-    if (existing.rows.length > 0) return res.status(400).json({ error: "El email ya está registrado" });
+    const existing = await pool.query("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
+    if (existing.rows.length > 0) return res.status(400).json({ error: "El usuario ya está registrado" });
 
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, full_name, cargo, role, is_active, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, 'user', TRUE, NOW(), NOW())
-       RETURNING id, email, full_name, cargo, role, is_active`,
-      [email.toLowerCase(), hash, fullName || "", cargo || "otro"]
+      `INSERT INTO users (username, email, password_hash, full_name, cargo, role, is_active, created_at, updated_at)
+       VALUES ($1, $1, $2, $3, $4, 'user', TRUE, NOW(), NOW())
+       RETURNING id, username, full_name, cargo, role, is_active`,
+      [username.toLowerCase(), hash, fullName || "", cargo || "otro"]
     );
     const u = result.rows[0];
-    res.json({ id: u.id, email: u.email, fullName: u.full_name, cargo: u.cargo, role: u.role, isActive: true });
+    res.json({ id: u.id, username: u.username, fullName: u.full_name, cargo: u.cargo, role: u.role, isActive: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error del servidor" });
   }
 });
 
-// Actualizar usuario (nombre, cargo, email, activar/desactivar)
+// Actualizar usuario (nombre, cargo, username, activar/desactivar)
 router.put("/users/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { fullName, cargo, isActive, email } = req.body;
+    const { fullName, cargo, isActive, username } = req.body;
     const fields = ["full_name = $1", "cargo = $2", "is_active = $3", "updated_at = NOW()"];
     const values = [fullName, cargo, isActive !== false];
-    if (email) {
-      // Check uniqueness
-      const dup = await pool.query("SELECT id FROM users WHERE email = $1 AND id != $2", [email.toLowerCase(), req.params.id]);
-      if (dup.rows.length > 0) return res.status(400).json({ error: "Ese email ya está en uso por otro usuario" });
-      fields.push(`email = $${values.length + 1}`);
-      values.push(email.toLowerCase());
+    if (username) {
+      const dup = await pool.query("SELECT id FROM users WHERE username = $1 AND id != $2", [username.toLowerCase(), req.params.id]);
+      if (dup.rows.length > 0) return res.status(400).json({ error: "Ese usuario ya está en uso" });
+      fields.push(`username = $${values.length + 1}`);
+      values.push(username.toLowerCase());
     }
     values.push(req.params.id);
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(", ")} WHERE id = $${values.length} RETURNING id, email, full_name, cargo, role, is_active`,
+      `UPDATE users SET ${fields.join(", ")} WHERE id = $${values.length} RETURNING id, username, full_name, cargo, role, is_active`,
       values
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "Usuario no encontrado" });
     const u = result.rows[0];
-    res.json({ id: u.id, email: u.email, fullName: u.full_name, cargo: u.cargo, role: u.role, isActive: u.is_active });
+    res.json({ id: u.id, username: u.username, fullName: u.full_name, cargo: u.cargo, role: u.role, isActive: u.is_active });
   } catch (err) {
     res.status(500).json({ error: "Error del servidor" });
   }

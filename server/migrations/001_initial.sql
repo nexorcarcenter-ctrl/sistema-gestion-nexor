@@ -316,6 +316,9 @@ CREATE TABLE IF NOT EXISTS cash_movements (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Add username to users (idempotent)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
+
 -- Add is_active to users (idempotent)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 
