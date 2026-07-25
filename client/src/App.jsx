@@ -62,9 +62,20 @@ function CashGuard({ children }) {
   const { openRegister, loading } = useCashRegister();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
   const needsCaja = REQUIRES_CAJA.some(r => location.pathname.startsWith(r));
 
-  if (loading || !needsCaja || openRegister) return children;
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setIsAdmin(payload.role === "admin");
+      } catch {}
+    }
+  }, []);
+
+  if (loading || !needsCaja || openRegister || isAdmin) return children;
 
   return (
     <>
