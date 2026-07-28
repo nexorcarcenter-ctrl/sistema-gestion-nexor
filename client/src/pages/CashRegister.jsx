@@ -1378,6 +1378,10 @@ export default function CashRegisterPage() {
     }).then(() => {
       setShowOpenForm(false); setOpeningNotes(""); setSaving(false);
       return loadData().then(refreshContext);
+    }).catch(err => {
+      console.error("Error al abrir caja:", err);
+      setSaving(false);
+      alert("Error al abrir la caja: " + (err.message || "Error desconocido"));
     });
   };
 
