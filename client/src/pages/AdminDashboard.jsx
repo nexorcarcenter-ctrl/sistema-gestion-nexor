@@ -48,12 +48,13 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("month");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     ServiceOrder.list("-createdAt", 200).then(data => {
       setOrders(data);
       setLoading(false);
-    });
+    }).catch(() => setError("Error al cargar datos"));
   }, []);
 
   // Filtrar por período
@@ -123,6 +124,11 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>

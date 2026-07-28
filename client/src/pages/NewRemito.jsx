@@ -31,6 +31,7 @@ export default function NewRemito() {
   const [saving, setSaving] = useState(false);
   const [issuing, setIssuing] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [error, setError] = useState(null);
 
   // Order search
   const [orderSearch, setOrderSearch] = useState("");
@@ -50,29 +51,33 @@ export default function NewRemito() {
 
   useEffect(() => {
     const load = async () => {
-      const [prods, ords, user] = await Promise.all([
-        Product.filter({ status: "active" }, "name", 500),
-        ServiceOrder.list("-createdAt", 200),
-        User.me().catch(() => null),
-      ]);
-      setProducts(prods);
-      setOrders(ords);
-      setCurrentUser(user);
+      try {
+        const [prods, ords, user] = await Promise.all([
+          Product.filter({ status: "active" }, "name", 500),
+          ServiceOrder.list("-createdAt", 200),
+          User.me().catch(() => null),
+        ]);
+        setProducts(prods);
+        setOrders(ords);
+        setCurrentUser(user);
 
-      if (editId) {
-        const remito = await Remito.get(editId);
-        if (remito) {
-          setForm({
-            date: remito.date || new Date().toISOString().split("T")[0],
-            notes: remito.notes || "",
-            status: remito.status || "draft",
-          });
-          setItems(JSON.parse(remito.items || "[]"));
-          if (remito.service_order_id) {
-            const order = ords.find(o => o.id === remito.service_order_id);
-            if (order) setSelectedOrder(order);
+        if (editId) {
+          const remito = await Remito.get(editId);
+          if (remito) {
+            setForm({
+              date: remito.date || new Date().toISOString().split("T")[0],
+              notes: remito.notes || "",
+              status: remito.status || "draft",
+            });
+            setItems(JSON.parse(remito.items || "[]"));
+            if (remito.service_order_id) {
+              const order = ords.find(o => o.id === remito.service_order_id);
+              if (order) setSelectedOrder(order);
+            }
           }
         }
+      } catch {
+        setError("Error al cargar datos");
       }
     };
     load();
@@ -211,6 +216,11 @@ export default function NewRemito() {
       `}</style>
 
       <div className="max-w-3xl mx-auto space-y-6 no-print">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(createPageUrl("Remitos"))}>

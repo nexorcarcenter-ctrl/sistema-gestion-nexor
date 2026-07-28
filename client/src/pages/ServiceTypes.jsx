@@ -75,12 +75,18 @@ export default function ServiceTypes() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [error, setError] = useState(null);
 
   const load = async () => {
     setLoading(true);
-    const data = await ServiceType.list("name");
-    setServiceTypes(data);
-    setLoading(false);
+    try {
+      const data = await ServiceType.list("name");
+      setServiceTypes(data);
+    } catch {
+      setError("Error al cargar datos");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -97,6 +103,11 @@ export default function ServiceTypes() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Tipos de Servicio</h1>

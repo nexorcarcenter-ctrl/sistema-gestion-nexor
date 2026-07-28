@@ -19,6 +19,7 @@ export default function InspectionPage() {
   const [saved, setSaved] = useState(false);
   const [inspectionData, setInspectionData] = useState(null);
   const [observations, setObservations] = useState("");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!orderId) { navigate(createPageUrl("ServiceOrders")); return; }
@@ -29,7 +30,7 @@ export default function InspectionPage() {
         setInspectionData(JSON.parse(o.inspectionData));
       }
       setLoading(false);
-    });
+    }).catch(() => setError("Error al cargar datos"));
   }, [orderId]);
 
   const handleConfirm = async () => {
@@ -56,6 +57,11 @@ export default function InspectionPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(createPageUrl(`ServiceOrderDetail?id=${orderId}`))}>

@@ -28,12 +28,13 @@ export default function Remitos() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     Remito.list("-createdAt", 200).then(data => {
       setRemitos(data);
       setLoading(false);
-    });
+    }).catch(() => setError("Error al cargar datos"));
   }, []);
 
   const filtered = remitos.filter(r => {
@@ -54,6 +55,11 @@ export default function Remitos() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

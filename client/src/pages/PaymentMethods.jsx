@@ -103,11 +103,17 @@ export default function PaymentMethods() {
   const [showForm, setShowForm] = useState(false);
   const [editMethod, setEditMethod] = useState(null);
   const [creatingDefaults, setCreatingDefaults] = useState(false);
+  const [error, setError] = useState(null);
 
   const loadMethods = async () => {
-    const data = await PaymentMethod.list("sort_order", 100);
-    setMethods(data);
-    setLoading(false);
+    try {
+      const data = await PaymentMethod.list("sort_order", 100);
+      setMethods(data);
+    } catch {
+      setError("Error al cargar datos");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadMethods(); }, []);
@@ -139,6 +145,11 @@ export default function PaymentMethods() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Métodos de Pago</h1>
