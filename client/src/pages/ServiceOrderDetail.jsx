@@ -6,14 +6,13 @@ import { Payment } from "@/entities/Payment";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PaymentDialog from "@/components/PaymentDialog";
-import WarrantyModal from "@/components/WarrantyModal";
 import { InspectionPreview } from "@/components/CarInspectionCanvas";
 
 import {
   ArrowLeft, Pencil, Car, User, Wrench,
   Package, Clock, CheckCircle, XCircle, Printer, DollarSign,
   Banknote, CreditCard, ArrowLeftRight, Plus, ClipboardCheck, CalendarDays,
-  ShieldCheck, LogOut, MessageCircle
+  LogOut, MessageCircle
 } from "lucide-react";
 
 const formatCurrency = (n) => `$ ${Number(n || 0).toLocaleString("es-UY", { minimumFractionDigits: 0 })}`;
@@ -48,7 +47,6 @@ export default function ServiceOrderDetail() {
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [showWarrantyModal, setShowWarrantyModal] = useState(false);
   const [warrantyPeriod, setWarrantyPeriod] = useState("12");
 
   const loadData = async () => {
@@ -74,10 +72,6 @@ export default function ServiceOrderDetail() {
   const handlePaymentSaved = (updatedOrder) => {
     setOrder(updatedOrder);
     loadData();
-  };
-
-  const handleGenerateWarranty = async () => {
-    setShowWarrantyModal(true);
   };
 
   const handleWhatsApp = () => {
@@ -165,14 +159,6 @@ export default function ServiceOrderDetail() {
               className="border-teal-300 text-teal-700 hover:bg-teal-50"
               onClick={() => navigate(createPageUrl(`ExitInspectionPage?id=${orderId}`))}>
               <LogOut className="h-4 w-4 mr-1" />Salida
-            </Button>
-          )}
-          {(order.status === "ready" || order.status === "delivered") && (
-            <Button size="sm" variant="outline"
-              className="border-teal-300 text-teal-700 hover:bg-teal-50"
-              onClick={handleGenerateWarranty}
-            >
-              <ShieldCheck className="h-4 w-4 mr-1" />Garantía
             </Button>
           )}
           <div className="flex items-center gap-1 print:hidden">
@@ -523,12 +509,6 @@ export default function ServiceOrderDetail() {
         onPaymentSaved={handlePaymentSaved}
       />
 
-      {showWarrantyModal && (
-        <WarrantyModal
-          order={order}
-          onClose={() => setShowWarrantyModal(false)}
-        />
-      )}
     </div>
   );
 }
