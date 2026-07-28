@@ -5,9 +5,10 @@ import { ServiceOrder } from "@/entities/ServiceOrder";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Car, User, Phone, Wrench, Clock, CheckCircle, PlayCircle,
-  ChevronRight, Search, RefreshCw, Plus, Package, ArrowRight
+  Car, Phone, Wrench, Clock, CheckCircle, PlayCircle,
+  ChevronRight, Search, RefreshCw, Plus, Package, ArrowRight, Trash2, User as UserIcon
 } from "lucide-react";
+import UserEntity from "@/entities/User";
 
 const fmtTime = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit" }) : "-";
 
@@ -24,7 +25,7 @@ const TABS = [
   { key: "ready",       label: "Listos" },
 ];
 
-function OrderCard({ order, onStatusChange, onNavigate }) {
+function OrderCard({ order, onStatusChange, onNavigate, isAdmin, onDelete }) {
   const cfg = STATUS_CONFIG[order.status];
   if (!cfg) return null;
   const Icon = cfg.icon;
@@ -69,7 +70,7 @@ function OrderCard({ order, onStatusChange, onNavigate }) {
       <div className="flex items-center gap-3 mb-3 flex-wrap">
         {order.customerName && (
           <span className="flex items-center gap-1 text-xs text-slate-600">
-            <User className="h-3 w-3 text-slate-400" />{order.customerName}
+            <UserIcon className="h-3 w-3 text-slate-400" />{order.customerName}
           </span>
         )}
         {order.customer_phone && (
@@ -112,6 +113,16 @@ function OrderCard({ order, onStatusChange, onNavigate }) {
 
       {/* Actions */}
       <div className="flex items-center gap-2 mt-2">
+        {isAdmin && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-2.5 text-xs border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600"
+            onClick={(e) => { e.stopPropagation(); onDelete(order.id, order.orderNumber || order.carPlate); }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <Button
           size="sm"
           className={`flex-1 text-xs font-semibold h-9 ${cfg.nextColor}`}
@@ -140,6 +151,7 @@ export default function WorkshopBoard() {
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const loadOrders = async () => {
     setLoading(true);
@@ -151,7 +163,16 @@ export default function WorkshopBoard() {
     setLoading(false);
   };
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => {
+    loadOrders();
+    UserEntity.me().then(u => { if (u?.role === "admin") setIsAdmin(true); }).catch(() => {});
+  }, []);
+
+  const handleDelete = async (id, label) => {
+    if (!confirm(`¿Eliminar orden ${label}?`)) return;
+    await ServiceOrder.delete(id);
+    setOrders(prev => prev.filter(o => o.id !== id));
+  };
 
   const handleStatusChange = (id, newStatus) => {
     if (newStatus === "delivered") {
@@ -281,6 +302,8 @@ export default function WorkshopBoard() {
                         order={order}
                         onStatusChange={handleStatusChange}
                         onNavigate={(id) => navigate(createPageUrl(`ServiceOrderDetail?id=${id}`))}
+                        isAdmin={isAdmin}
+                        onDelete={handleDelete}
                       />
                     ))}
                   </div>
@@ -294,6 +317,8 @@ export default function WorkshopBoard() {
               order={order}
               onStatusChange={handleStatusChange}
               onNavigate={(id) => navigate(createPageUrl(`ServiceOrderDetail?id=${id}`))}
+              isAdmin={isAdmin}
+              onDelete={handleDelete}
             />
           ))}
         </div>
