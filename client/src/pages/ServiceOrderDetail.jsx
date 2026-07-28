@@ -100,7 +100,7 @@ export default function ServiceOrderDetail() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Logo solo visible al imprimir */}
       <div className="print-logo-header">
-        <img src="/nexor-logo.svg" alt="Nexor" style={{ height: "48px" }} />
+        <img src="/nexor-logo-dark.svg" alt="Nexor" style={{ height: "48px" }} />
       </div>
       {/* Header */}
       <div className="flex items-center justify-between">
