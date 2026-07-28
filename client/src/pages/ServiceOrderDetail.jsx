@@ -49,7 +49,6 @@ export default function ServiceOrderDetail() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showWarrantyModal, setShowWarrantyModal] = useState(false);
-  const [warrantyPeriod, setWarrantyPeriod] = useState("12");
 
   const loadData = async () => {
     if (!orderId) { navigate(createPageUrl("ServiceOrders")); return; }
@@ -175,18 +174,6 @@ export default function ServiceOrderDetail() {
               <ShieldCheck className="h-4 w-4 mr-1" />Garantía
             </Button>
           )}
-          <div className="flex items-center gap-1 print:hidden">
-            <select
-              value={warrantyPeriod}
-              onChange={e => setWarrantyPeriod(e.target.value)}
-              className="h-8 px-2 rounded-md border border-slate-200 bg-white text-xs text-slate-600"
-              title="Plazo de garantía"
-            >
-              <option value="3">Garantía 3 meses</option>
-              <option value="6">Garantía 6 meses</option>
-              <option value="12">Garantía 1 año</option>
-            </select>
-          </div>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4 mr-1" />Imprimir
           </Button>
@@ -510,11 +497,6 @@ export default function ServiceOrderDetail() {
         </div>
       </div>
 
-
-      {/* Póliza de Garantía - solo visible al imprimir */}
-      <div className="hidden print:block print:break-before-page">
-        <img src={`/garantia-${warrantyPeriod}.png`} alt="Póliza de Garantía" style={{ width: "100%", display: "block" }} />
-      </div>
 
       <PaymentDialog
         open={showPaymentDialog}
