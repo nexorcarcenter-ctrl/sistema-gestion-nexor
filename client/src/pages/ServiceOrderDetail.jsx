@@ -48,16 +48,21 @@ export default function ServiceOrderDetail() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [warrantyPeriod, setWarrantyPeriod] = useState("12");
+  const [error, setError] = useState(null);
 
   const loadData = async () => {
     if (!orderId) { navigate(createPageUrl("ServiceOrders")); return; }
-    const [orderData, paymentData] = await Promise.all([
-      ServiceOrder.get(orderId),
-      Payment.filter({ service_order_id: orderId }, "-paid_at", 50),
-    ]);
-    setOrder(orderData);
-    setPayments(paymentData);
-    setLoading(false);
+    try {
+      const [orderData, paymentData] = await Promise.all([
+        ServiceOrder.get(orderId),
+        Payment.filter({ service_order_id: orderId }, "-paid_at", 50),
+      ]);
+      setOrder(orderData);
+      setPayments(paymentData);
+      setLoading(false);
+    } catch {
+      setError("Error al cargar datos");
+    }
   };
 
   useEffect(() => { loadData(); }, [orderId]);
@@ -98,6 +103,11 @@ export default function ServiceOrderDetail() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Logo solo visible al imprimir */}
       <div className="print-logo-header">
         <img src="/nexor-logo-dark.svg" alt="Nexor" style={{ height: "48px" }} />

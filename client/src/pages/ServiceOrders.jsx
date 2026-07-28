@@ -37,12 +37,13 @@ export default function ServiceOrders() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     ServiceOrder.list("-createdAt", 100).then(data => {
       setOrders(data);
       setLoading(false);
-    });
+    }).catch(() => setError("Error al cargar datos"));
   }, []);
 
   const filtered = orders.filter(o => {
@@ -65,6 +66,11 @@ export default function ServiceOrders() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Órdenes de Servicio</h1>

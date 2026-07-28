@@ -505,15 +505,21 @@ export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [formState, setFormState] = useState(null); // null | { initialDate, initialTime, appointment }
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const todayStr = toDateStr(today);
   const grid = getMonthGrid(year, month);
 
   const loadAppointments = async () => {
     setLoading(true);
-    const data = await Appointment.list("-date", 1000);
-    setAppointments(data);
-    setLoading(false);
+    try {
+      const data = await Appointment.list("-date", 1000);
+      setAppointments(data);
+    } catch {
+      setError("Error al cargar datos");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadAppointments(); }, []);
@@ -602,6 +608,11 @@ export default function AgendaPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

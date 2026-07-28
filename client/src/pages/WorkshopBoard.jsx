@@ -152,15 +152,21 @@ export default function WorkshopBoard() {
   const [search, setSearch] = useState("");
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState(null);
 
   const loadOrders = async () => {
     setLoading(true);
-    const data = await ServiceOrder.list("-entry_date", 200);
-    // Show active orders (not delivered/cancelled)
-    const active = data.filter(o => ["pending", "in_progress", "ready"].includes(o.status));
-    setOrders(active);
-    setLastRefresh(new Date());
-    setLoading(false);
+    try {
+      const data = await ServiceOrder.list("-entry_date", 200);
+      // Show active orders (not delivered/cancelled)
+      const active = data.filter(o => ["pending", "in_progress", "ready"].includes(o.status));
+      setOrders(active);
+      setLastRefresh(new Date());
+    } catch {
+      setError("Error al cargar datos");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -207,6 +213,11 @@ export default function WorkshopBoard() {
 
   return (
     <div className="space-y-5">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>

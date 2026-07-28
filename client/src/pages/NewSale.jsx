@@ -46,6 +46,7 @@ export default function NewSale() {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const _n = new Date();
@@ -64,7 +65,7 @@ export default function NewSale() {
       ]);
       const todayReg = registers.find(r => (r.date || "").split("T")[0] === today);
       if (todayReg) setCashRegister(todayReg);
-    });
+    }).catch(() => setError("Error al cargar datos"));
   }, []);
 
   const filteredProducts = products.filter(p =>
@@ -224,6 +225,11 @@ export default function NewSale() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(createPageUrl("Sales"))}>

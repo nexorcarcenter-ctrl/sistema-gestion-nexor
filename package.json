@@ -1,5 +1,5 @@
 {
-  "name": "retail-pos",
+  "name": "nexor-gestion",
   "version": "1.0.0",
   "scripts": {
     "build": "cd client && npm install --include=dev && npm run build",
