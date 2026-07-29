@@ -139,8 +139,8 @@ function AppRoutes() {
                 <Route path="/new-remito" element={<NewRemito />} />
                 <Route path="/purchase-orders" element={<PurchaseOrders />} />
                 <Route path="/purchase-order-detail" element={<PurchaseOrderDetail />} />
-                <Route path="/new-purchase-order" element={<NewPurchaseOrder />} />
-                <Route path="/suppliers" element={<Suppliers />} />
+                <Route path="/new-purchase-order" element={<ComingSoonGuard><NewPurchaseOrder /></ComingSoonGuard>} />
+                <Route path="/suppliers" element={<ComingSoonGuard><Suppliers /></ComingSoonGuard>} />
                 <Route path="/service-types" element={<ServiceTypes />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/cash-register" element={<CashRegister />} />
