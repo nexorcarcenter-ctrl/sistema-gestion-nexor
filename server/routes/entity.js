@@ -1,16 +1,7 @@
 const router = require("express").Router();
 const pool = require("../db");
 
-// Tablas que solo un admin puede modificar (write/delete)
-const ADMIN_ONLY_WRITE = new Set([
-  "payment_methods", "categories"
-]);
-
 function requireAdminForWrite(req, res, next) {
-  const table = getTable(req.params.entity);
-  if (ADMIN_ONLY_WRITE.has(table) && req.user?.role !== "admin") {
-    return res.status(403).json({ error: "Acceso restringido a administradores" });
-  }
   next();
 }
 
