@@ -3,7 +3,7 @@ const pool = require("../db");
 
 // Tablas que solo un admin puede modificar (write/delete)
 const ADMIN_ONLY_WRITE = new Set([
-  "payment_methods", "service_types", "categories"
+  "payment_methods", "categories"
 ]);
 
 function requireAdminForWrite(req, res, next) {
