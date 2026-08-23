@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Plus, Trash2, Package, Wrench, ChevronDown, ChevronUp, Search, X, Clock, CalendarDays, User, Phone, Car, AlertCircle } from "lucide-react";
 import QuickScheduleInput from "@/components/QuickScheduleInput";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertTriangle } from "lucide-react";
 
 const formatCurrency = (n) => `$${Number(n || 0).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
 
@@ -277,6 +279,8 @@ export default function NewServiceOrder() {
   }, { sale: 0, cost: 0 });
   const profit = totals.sale - totals.cost;
 
+  const [mostrarAviso, setMostrarAviso] = useState(false);
+
   const validate = () => {
     const newErrors = {};
     if (!form.customer_name.trim()) newErrors.customer_name = "El nombre es obligatorio";
@@ -286,8 +290,16 @@ export default function NewServiceOrder() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async () => {
+  // Servicios elegidos sin precio: la orden quedaría en $0 y la venta sin detalle
+  const sinPrecio = services.filter((s) => !(parseFloat(s.sale_price) > 0));
+
+  const handleSave = async ({ omitirAviso = false } = {}) => {
     if (!validate()) return;
+    // Se avisa, no se impide: puede ser garantía, cortesía o presupuesto a definir
+    if (sinPrecio.length > 0 && !omitirAviso) {
+      setMostrarAviso(true);
+      return;
+    }
     setSaving(true);
 
     try {
@@ -704,7 +716,7 @@ export default function NewServiceOrder() {
 
             <Button
               className="w-full mt-4"
-              onClick={handleSave}
+              onClick={() => handleSave()}
               disabled={saving || !canSave}
             >
               {saving ? "Guardando..." : editId ? "Actualizar Orden" : "Crear Cita"}
@@ -722,6 +734,44 @@ export default function NewServiceOrder() {
           </div>
         </div>
       </div>
+
+      <Dialog open={mostrarAviso} onOpenChange={setMostrarAviso}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              {sinPrecio.length === 1 ? "Un servicio no tiene precio" : `${sinPrecio.length} servicios sin precio`}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-900">
+            La orden se guardaría con un total de <b>{formatCurrency(totals.sale)}</b>.
+            Al cobrarla, la venta va a quedar sin el detalle de lo que se hizo.
+          </div>
+
+          <ul className="space-y-1 text-sm text-slate-600">
+            {sinPrecio.map((s, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <Wrench className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{s.service_name || "Servicio sin nombre"}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex gap-2 pt-1">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => { setMostrarAviso(false); handleSave({ omitirAviso: true }); }}
+            >
+              Guardar igual
+            </Button>
+            <Button className="flex-1 bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => setMostrarAviso(false)}>
+              Volver y cargar precio
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

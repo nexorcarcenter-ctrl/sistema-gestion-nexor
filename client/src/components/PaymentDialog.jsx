@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import MissingPriceDialog from "./MissingPriceDialog";
 import { DollarSign, Banknote, CreditCard, ArrowLeftRight, AlertCircle, FileCheck, MoreHorizontal, Plus, X } from "lucide-react";
 
 const TYPE_ICONS = {
@@ -50,6 +51,8 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
   const [noCashRegister, setNoCashRegister] = useState(false);
   // Split payment entries
   const [entries, setEntries] = useState([]);
+  // Cobro en espera mientras se resuelve el aviso de precios faltantes
+  const [cobroPendiente, setCobroPendiente] = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +87,11 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
   if (!order) return null;
 
   const totalSale = Number(order.total_sale) || 0;
+  const serviciosOrden = (() => {
+    try { return JSON.parse(order.services || "[]"); } catch { return []; }
+  })();
+  // Servicios elegidos a los que nunca se les cargó precio: la venta saldría sin detalle
+  const serviciosSinPrecio = serviciosOrden.filter((s) => !(Number(s.sale_price) > 0));
   const alreadyPaid = Number(order.paid_amount) || 0;
   const remaining = totalSale - alreadyPaid;
 
@@ -126,6 +134,55 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
     }
     if (finalEntries.length === 0) return;
 
+    // Si hay servicios sin precio, se avisa antes de cobrar. El operador
+    // decide si los carga ahora o sigue igual; nunca se le impide cobrar.
+    if (serviciosSinPrecio.length > 0) {
+      setCobroPendiente(finalEntries);
+      return;
+    }
+
+    await ejecutarCobro(finalEntries, null);
+  };
+
+  // Carga los precios que el operador ingresó en el aviso y sigue con el cobro
+  const confirmarPrecios = async (precios) => {
+    const actualizados = serviciosOrden.map((s) => {
+      if (Number(s.sale_price) > 0) return s;
+      const idx = serviciosSinPrecio.indexOf(s);
+      const nuevo = precios[idx] || 0;
+      if (!nuevo) return s;
+      // La mano de obra es ganancia pura: el precio va como labor_cost
+      return { ...s, sale_price: nuevo, labor_cost: Number(s.labor_cost) || nuevo };
+    });
+
+    const nuevoTotal = actualizados.reduce((acc, s) => acc + (Number(s.sale_price) || 0), 0);
+    const nuevoCosto = actualizados.reduce((acc, s) => {
+      const prods = (s.products || []).reduce((x, p) => x + (Number(p.cost_price) || 0) * (Number(p.quantity) || 1), 0);
+      return acc + prods;
+    }, 0);
+
+    await ServiceOrder.update(order.id, {
+      services: JSON.stringify(actualizados),
+      total_sale: nuevoTotal,
+      total_cost: nuevoCosto,
+      profit: nuevoTotal - nuevoCosto,
+    });
+
+    const pendiente = cobroPendiente;
+    setCobroPendiente(null);
+    await ejecutarCobro(pendiente, { servicios: actualizados, totalSale: nuevoTotal });
+  };
+
+  const seguirSinPrecios = async () => {
+    const pendiente = cobroPendiente;
+    setCobroPendiente(null);
+    await ejecutarCobro(pendiente, null);
+  };
+
+  const ejecutarCobro = async (finalEntries, override) => {
+    const serviciosParaVenta = override?.servicios || serviciosOrden;
+    const totalSaleEfectivo = override?.totalSale ?? totalSale;
+
     setSaving(true);
 
     const totalPayingUYU = finalEntries.reduce((s, e) => s + e.amountUYU, 0);
@@ -151,7 +208,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
     // 2. Update ServiceOrder payment status
     const newPaidAmount = alreadyPaid + totalPayingUYU;
     let paymentStatus = "partial";
-    if (newPaidAmount >= totalSale) paymentStatus = "paid";
+    if (newPaidAmount >= totalSaleEfectivo) paymentStatus = "paid";
     if (newPaidAmount <= 0) paymentStatus = "unpaid";
 
     await ServiceOrder.update(order.id, {
@@ -164,8 +221,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
       ? await Sale.filter({ service_order_id: order.id }, "-createdAt", 1)
       : [];
 
-    const services = JSON.parse(order.services || "[]");
-    const saleItems = services.flatMap(svc => {
+    const saleItems = serviciosParaVenta.flatMap(svc => {
       const items = [];
       if (svc.sale_price > 0) {
         items.push({
@@ -234,7 +290,7 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
         total_uyu: totalPayingUYU,
         total_usd: totalUSD,
         total: totalPayingUYU,
-        subtotal: totalSale,
+        subtotal: totalSaleEfectivo,
         payment_status: paymentStatus === "paid" ? "paid" : "partial",
         status: "completed",
         cash_register_id: cashRegister?.id || "",
@@ -278,7 +334,10 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
   const canAdd = amountNum > 0 && selectedMethod;
   const canSave = (entries.length > 0 || canAdd) && !noCashRegister;
 
+  const montoCobrando = entriesTotal + amountUYU;
+
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -497,5 +556,16 @@ export default function PaymentDialog({ open, onClose, order, onPaymentSaved }) 
         </div>
       </DialogContent>
     </Dialog>
+
+    <MissingPriceDialog
+      open={!!cobroPendiente}
+      onClose={() => setCobroPendiente(null)}
+      servicios={serviciosSinPrecio}
+      montoCobrando={montoCobrando}
+      totalOrden={totalSale}
+      onConfirmar={confirmarPrecios}
+      onSeguir={seguirSinPrecios}
+    />
+    </>
   );
 }
