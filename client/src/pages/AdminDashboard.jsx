@@ -52,6 +52,9 @@ export default function AdminDashboard() {
   });
 
   if (error) {
+    // A un usuario sin permisos ya lo tapa ComingSoonGuard: no hace falta
+    // mostrarle además un cartel de error debajo del blur.
+    if (/administrador/i.test(error.message)) return null;
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
         {error.message}
