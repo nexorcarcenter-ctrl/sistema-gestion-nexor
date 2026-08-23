@@ -3,8 +3,7 @@ import moment from "moment";
 
 const API_BASE = "/api/reports";
 
-// Convierte el período elegido en la UI a un rango de fechas concreto.
-// El backend siempre recibe from/to explícitos, nunca "este mes".
+// Períodos rápidos: siempre relativos a hoy.
 export function rangoDelPeriodo(periodo) {
   const hoy = moment();
   const unidad = { today: "day", week: "week", month: "month", year: "year" }[periodo] || "month";
@@ -14,9 +13,32 @@ export function rangoDelPeriodo(periodo) {
   };
 }
 
+// Acepta un período rápido ("month") o un rango explícito ({ from, to }).
+// El backend siempre recibe fechas concretas.
+function resolverRango(periodoORango) {
+  if (periodoORango && typeof periodoORango === "object") {
+    const { from, to } = periodoORango;
+    if (from && to) return { from, to };
+  }
+  return rangoDelPeriodo(periodoORango);
+}
+
+// Últimos N meses cerrados, para el selector de mes
+export function mesesDisponibles(cantidad = 12) {
+  return Array.from({ length: cantidad }, (_, i) => {
+    const m = moment().subtract(i, "months");
+    return {
+      valor: m.format("YYYY-MM"),
+      etiqueta: m.format("MMMM YYYY"),
+      from: m.clone().startOf("month").format("YYYY-MM-DD"),
+      to: m.clone().endOf("month").format("YYYY-MM-DD"),
+    };
+  });
+}
+
 export const Report = {
   async summary(periodo = "month") {
-    const { from, to } = rangoDelPeriodo(periodo);
+    const { from, to } = resolverRango(periodo);
     return apiFetch(`${API_BASE}/summary?from=${from}&to=${to}`);
   },
 
@@ -25,7 +47,7 @@ export const Report = {
   },
 
   async top(periodo = "month", limit = 6) {
-    const { from, to } = rangoDelPeriodo(periodo);
+    const { from, to } = resolverRango(periodo);
     return apiFetch(`${API_BASE}/top?from=${from}&to=${to}&limit=${limit}`);
   },
 };

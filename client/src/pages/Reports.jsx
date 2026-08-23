@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Report } from "@/entities/Report";
 import { DollarSign, TrendingUp, ShoppingCart, Percent, Package } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PeriodPicker from "../components/PeriodPicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import * as RC from "recharts";
 import StatCard from "../components/StatCard";
@@ -22,18 +22,22 @@ function Vacio({ children }) {
 export default function Reports() {
   const { t } = useLanguage();
   const [period, setPeriod] = useState("month");
+  const [rango, setRango] = useState(null);
+  // Lo que se le manda a la API: un rango explícito si hay, si no el atajo
+  const consulta = rango || period;
+  const claveConsulta = rango ? `${rango.from}_${rango.to}` : period;
 
   const { data: resumen, isLoading, error } = useQuery({
-    queryKey: ["report-summary", period],
-    queryFn: () => Report.summary(period),
+    queryKey: ["report-summary", claveConsulta],
+    queryFn: () => Report.summary(consulta),
   });
   const { data: serie = [] } = useQuery({
     queryKey: ["report-timeseries"],
     queryFn: () => Report.timeseries(6),
   });
   const { data: top } = useQuery({
-    queryKey: ["report-top", period],
-    queryFn: () => Report.top(period, 6),
+    queryKey: ["report-top", claveConsulta],
+    queryFn: () => Report.top(consulta, 6),
   });
 
   if (error) {
@@ -77,14 +81,11 @@ export default function Reports() {
             </p>
           )}
         </div>
-        <Tabs value={period} onValueChange={setPeriod}>
-          <TabsList>
-            <TabsTrigger value="today">{t("today")}</TabsTrigger>
-            <TabsTrigger value="week">{t("thisWeek")}</TabsTrigger>
-            <TabsTrigger value="month">{t("thisMonth")}</TabsTrigger>
-            <TabsTrigger value="year">{t("thisYear")}</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <PeriodPicker
+          periodo={period}
+          rango={rango}
+          onChange={({ periodo, rango: r }) => { setPeriod(periodo); setRango(r); }}
+        />
       </div>
 
       {isLoading ? (
