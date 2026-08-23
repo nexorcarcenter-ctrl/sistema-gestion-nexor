@@ -126,6 +126,14 @@ const translations = {
   body_van: "Van", body_coupe: "Coupé", body_convertible: "Descapotable", body_wagon: "Familiar", body_other: "Otro",
   cond_new: "Nuevo", cond_used: "Usado", cond_certified: "Certificado",
   carStatus_available: "Disponible", carStatus_reserved: "Reservado", carStatus_sold: "Vendido", carStatus_in_repair: "En Reparación",
+  // Reportes
+  productCost: "Costo Productos", profit: "Utilidad", revenueBreakdown: "Composición del Ingreso",
+  fromProducts: "Productos", fromServices: "Mano de Obra", monthlyEvolution: "Evolución Mensual",
+  topProductsByProfit: "Productos por Utilidad", topServicesByRevenue: "Servicios por Facturación",
+  noDataPeriod: "Sin movimientos en este período", vsPrevious: "vs período anterior",
+  activeOrders: "Órdenes Activas", todayAppointments: "Turnos de Hoy", inWorkshop: "En el taller",
+  units: "u.", sold: "vendidos",
+  salesByCategory: "Ventas por Categoría", paymentMethods: "Formas de Cobro",
 };
 
 const LanguageContext = createContext();

@@ -44,6 +44,9 @@ app.use("/api/stock", authMiddleware, require("./routes/stock"));
 // Sequence routes (protected)
 app.use("/api/sequence", authMiddleware, require("./routes/sequence"));
 
+// Reports routes (protected, solo admin)
+app.use("/api/reports", authMiddleware, require("./routes/reports"));
+
 // Health check
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 

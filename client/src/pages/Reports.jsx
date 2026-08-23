@@ -1,70 +1,294 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sale } from "@/entities/Sale";
-import { Product } from "@/entities/Product";
-import { PurchaseOrder } from "@/entities/PurchaseOrder";
-import { DollarSign, TrendingUp, ShoppingCart, Percent } from "lucide-react";
+import { Report } from "@/entities/Report";
+import { DollarSign, TrendingUp, ShoppingCart, Percent, Package } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SalesChart from "../components/SalesChart";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import * as RC from "recharts";
 import StatCard from "../components/StatCard";
-import CategoryPieChart from "../components/CategoryPieChart";
-import PaymentPieChart from "../components/PaymentPieChart";
-import ReportSummaryCards from "../components/ReportSummaryCards";
+import DeltaBadge from "../components/DeltaBadge";
 import { useLanguage } from "../context/LanguageContext";
 import moment from "moment";
 
-const fmt = (v) => `$${(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$${Math.round(Number(v) || 0).toLocaleString("es-UY")}`;
+const pct = (v) => `${(Number(v) || 0).toFixed(1)}%`;
+const mesCorto = (m) => moment(m, "YYYY-MM").format("MMM");
+const COLORES = ["#E8461E", "#14b8a6", "#f59e0b", "#3b82f6", "#8b5cf6", "#ec4899", "#64748b"];
+
+function Vacio({ children }) {
+  return <p className="text-sm text-slate-400 text-center py-10">{children}</p>;
+}
 
 export default function Reports() {
   const { t } = useLanguage();
   const [period, setPeriod] = useState("month");
-  const { data: sales = [] } = useQuery({ queryKey: ["sales"], queryFn: () => Sale.list("-createdAt", 1000) });
-  const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: () => Product.list("name", 500) });
-  const { data: purchaseOrders = [] } = useQuery({ queryKey: ["purchase-orders"], queryFn: () => PurchaseOrder.list("-createdAt", 500) });
 
-  const filteredSales = useMemo(() => sales.filter((s) => {
-    if (s.status !== "completed") return false;
-    const d = moment(s.sale_date || s.createdAt);
-    if (period === "today") return d.isSame(moment(), "day");
-    if (period === "week") return d.isSame(moment(), "week");
-    if (period === "month") return d.isSame(moment(), "month");
-    return d.isSame(moment(), "year");
-  }), [sales, period]);
+  const { data: resumen, isLoading, error } = useQuery({
+    queryKey: ["report-summary", period],
+    queryFn: () => Report.summary(period),
+  });
+  const { data: serie = [] } = useQuery({
+    queryKey: ["report-timeseries"],
+    queryFn: () => Report.timeseries(6),
+  });
+  const { data: top } = useQuery({
+    queryKey: ["report-top", period],
+    queryFn: () => Report.top(period, 6),
+  });
 
-  const totalRevenue = filteredSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
-  const totalCost = filteredSales.reduce((sum, s) => {
-    try {
-      const items = JSON.parse(s.items_json || "[]");
-      return sum + items.reduce((iSum, item) => {
-        const product = products.find((p) => p.id === item.product_id);
-        return iSum + ((product?.cost_price || 0) * (item.quantity || 0));
-      }, 0);
-    } catch { return sum; }
-  }, 0);
-  const grossProfit = totalRevenue - totalCost;
-  const profitMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : 0;
-  const avgTransaction = filteredSales.length > 0 ? totalRevenue / filteredSales.length : 0;
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        {error.message}
+      </div>
+    );
+  }
+
+  const a = resumen?.actual;
+  const prev = resumen?.anterior;
+  const inv = resumen?.inventario;
+  const sinDatos = !isLoading && a && a.ventas === 0;
+
+  const serieChart = serie.map((s) => ({
+    mes: mesCorto(s.mes),
+    Ingresos: s.ingresos,
+    Costo: s.costo,
+    Utilidad: s.utilidad,
+  }));
+
+  const composicion = a
+    ? [
+        { name: t("fromProducts"), value: a.ingresos_productos },
+        { name: t("fromServices"), value: a.ingresos_servicios },
+      ].filter((x) => x.value > 0)
+    : [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">{t("reports")}</h1>
-        <Tabs value={period} onValueChange={setPeriod}><TabsList><TabsTrigger value="today">{t("today")}</TabsTrigger><TabsTrigger value="week">{t("thisWeek")}</TabsTrigger><TabsTrigger value="month">{t("thisMonth")}</TabsTrigger><TabsTrigger value="year">{t("thisYear")}</TabsTrigger></TabsList></Tabs>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{t("reports")}</h1>
+          {resumen && (
+            <p className="text-sm text-slate-500">
+              {moment(resumen.periodo.desde).format("DD/MM/YYYY")} — {moment(resumen.periodo.hasta).format("DD/MM/YYYY")}
+            </p>
+          )}
+        </div>
+        <Tabs value={period} onValueChange={setPeriod}>
+          <TabsList>
+            <TabsTrigger value="today">{t("today")}</TabsTrigger>
+            <TabsTrigger value="week">{t("thisWeek")}</TabsTrigger>
+            <TabsTrigger value="month">{t("thisMonth")}</TabsTrigger>
+            <TabsTrigger value="year">{t("thisYear")}</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title={t("totalRevenue")} value={fmt(totalRevenue)} icon={DollarSign} color="text-[#E8461E]" bgColor="bg-[#E8461E]/5" />
-        <StatCard title={t("grossProfit")} value={fmt(grossProfit)} icon={TrendingUp} color="text-emerald-600" bgColor="bg-emerald-50" />
-        <StatCard title={t("profitMargin")} value={`${profitMargin}%`} icon={Percent} color="text-blue-600" bgColor="bg-blue-50" />
-        <StatCard title={t("transactions")} value={filteredSales.length} subtitle={`${t("avgTransaction")}: ${fmt(avgTransaction)}`} icon={ShoppingCart} color="text-[#E8461E]" bgColor="bg-[#E8461E]/5" />
-      </div>
-      <div className="grid lg:grid-cols-2 gap-4">
-        <SalesChart sales={sales} title={t("salesTrend")} />
-        <CategoryPieChart sales={filteredSales} products={products} />
-      </div>
-      <div className="grid lg:grid-cols-3 gap-4">
-        <PaymentPieChart sales={filteredSales} />
-        <ReportSummaryCards products={products} purchaseOrders={purchaseOrders} />
-      </div>
+
+      {isLoading ? (
+        <div className="text-center py-16 text-slate-400">Cargando...</div>
+      ) : (
+        <>
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <StatCard
+              title={t("totalRevenue")} value={fmt(a.ingresos)} icon={DollarSign}
+              subtitle={<DeltaBadge actual={a.ingresos} anterior={prev?.ingresos} />}
+              color="text-[#E8461E]" bgColor="bg-[#E8461E]/5"
+            />
+            <StatCard
+              title={t("productCost")} value={fmt(a.costo_productos)} icon={Package}
+              subtitle={<DeltaBadge actual={a.costo_productos} anterior={prev?.costo_productos} invertir />}
+              color="text-amber-600" bgColor="bg-amber-50"
+            />
+            <StatCard
+              title={t("profit")} value={fmt(a.utilidad)} icon={TrendingUp}
+              subtitle={<DeltaBadge actual={a.utilidad} anterior={prev?.utilidad} />}
+              color="text-emerald-600" bgColor="bg-emerald-50"
+            />
+            <StatCard
+              title={t("profitMargin")} value={pct(a.margen)} icon={Percent}
+              color="text-blue-600" bgColor="bg-blue-50"
+            />
+            <StatCard
+              title={t("transactions")} value={a.ventas} icon={ShoppingCart}
+              subtitle={`${t("avgTransaction")}: ${fmt(a.ticket_promedio)}`}
+              color="text-[#E8461E]" bgColor="bg-[#E8461E]/5"
+            />
+          </div>
+
+          {sinDatos && <Vacio>{t("noDataPeriod")}</Vacio>}
+
+          {/* Evolución + composición */}
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card className="border-0 shadow-sm lg:col-span-2">
+              <CardHeader><CardTitle className="text-sm">{t("monthlyEvolution")}</CardTitle></CardHeader>
+              <CardContent>
+                <RC.ResponsiveContainer width="100%" height={240}>
+                  <RC.BarChart data={serieChart} barGap={4}>
+                    <RC.CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <RC.XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                    <RC.YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                    <RC.Tooltip formatter={(v) => fmt(v)} />
+                    <RC.Legend wrapperStyle={{ fontSize: 11 }} />
+                    <RC.Bar dataKey="Ingresos" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                    <RC.Bar dataKey="Costo" fill="#fb923c" radius={[4, 4, 0, 0]} />
+                    <RC.Bar dataKey="Utilidad" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                  </RC.BarChart>
+                </RC.ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">{t("revenueBreakdown")}</CardTitle></CardHeader>
+              <CardContent>
+                {composicion.length === 0 ? <Vacio>{t("noDataPeriod")}</Vacio> : (
+                  <>
+                    <RC.ResponsiveContainer width="100%" height={160}>
+                      <RC.PieChart>
+                        <RC.Pie data={composicion} dataKey="value" nameKey="name" innerRadius={45} outerRadius={70} paddingAngle={2}>
+                          <RC.Cell fill="#E8461E" />
+                          <RC.Cell fill="#14b8a6" />
+                        </RC.Pie>
+                        <RC.Tooltip formatter={(v) => fmt(v)} />
+                      </RC.PieChart>
+                    </RC.ResponsiveContainer>
+                    <div className="space-y-2 mt-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="flex items-center gap-2 text-slate-500">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#E8461E]" />{t("fromProducts")}
+                        </span>
+                        <span className="font-bold">{fmt(a.ingresos_productos)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="flex items-center gap-2 text-slate-500">
+                          <span className="w-2.5 h-2.5 rounded-full bg-teal-500" />{t("fromServices")}
+                        </span>
+                        <span className="font-bold">{fmt(a.ingresos_servicios)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Rankings */}
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">{t("topProductsByProfit")}</CardTitle></CardHeader>
+              <CardContent>
+                {!top?.productos?.length ? <Vacio>{t("noDataPeriod")}</Vacio> : (
+                  <div className="space-y-3">
+                    {top.productos.map((p, i) => (
+                      <div key={`${p.nombre}-${i}`} className="flex items-center gap-3">
+                        <span className="w-5 h-5 rounded-full bg-[#E8461E]/10 text-[#c73a15] text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-700 truncate">{p.nombre}</p>
+                          <p className="text-[11px] text-slate-400">{p.cantidad} {t("units")} · {fmt(p.venta)}</p>
+                        </div>
+                        <span className={`text-sm font-bold shrink-0 ${p.utilidad < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                          {fmt(p.utilidad)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">{t("topServicesByRevenue")}</CardTitle></CardHeader>
+              <CardContent>
+                {!top?.servicios?.length ? <Vacio>{t("noDataPeriod")}</Vacio> : (
+                  <div className="space-y-3">
+                    {top.servicios.map((s, i) => (
+                      <div key={`${s.nombre}-${i}`} className="flex items-center gap-3">
+                        <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-700 truncate">{s.nombre}</p>
+                          <p className="text-[11px] text-slate-400">{s.cantidad} {t("sold")}</p>
+                        </div>
+                        <span className="text-sm font-bold text-slate-700 shrink-0">{fmt(s.venta)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Desglose por categoría y forma de cobro */}
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">{t("salesByCategory")}</CardTitle></CardHeader>
+              <CardContent>
+                {!top?.categorias?.length ? <Vacio>{t("noDataPeriod")}</Vacio> : (
+                  <RC.ResponsiveContainer width="100%" height={200}>
+                    <RC.PieChart>
+                      <RC.Pie data={top.categorias} dataKey="venta" nameKey="nombre" innerRadius={45} outerRadius={75} paddingAngle={2}>
+                        {top.categorias.map((c, i) => <RC.Cell key={c.nombre} fill={COLORES[i % COLORES.length]} />)}
+                      </RC.Pie>
+                      <RC.Tooltip formatter={(v) => fmt(v)} />
+                      <RC.Legend wrapperStyle={{ fontSize: 11 }} />
+                    </RC.PieChart>
+                  </RC.ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">{t("paymentMethods")}</CardTitle></CardHeader>
+              <CardContent>
+                {!top?.formas_pago?.length ? <Vacio>{t("noDataPeriod")}</Vacio> : (
+                  <div className="space-y-3 pt-1">
+                    {top.formas_pago.map((f, i) => {
+                      const totalPagos = top.formas_pago.reduce((s2, x) => s2 + x.monto, 0);
+                      const porcentaje = totalPagos > 0 ? (f.monto / totalPagos) * 100 : 0;
+                      return (
+                        <div key={f.nombre}>
+                          <div className="flex justify-between items-baseline text-sm mb-1">
+                            <span className="text-slate-600 truncate">{f.nombre}</span>
+                            <span className="font-bold shrink-0 ml-2">{fmt(f.monto)}</span>
+                          </div>
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${porcentaje}%`, background: COLORES[i % COLORES.length] }} />
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{f.operaciones} operaciones · {porcentaje.toFixed(0)}%</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Inventario */}
+          {inv && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">{t("inventorySummary")}</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-slate-500">{t("totalProducts")}</p>
+                  <p className="text-xl font-bold text-slate-800">{inv.productos}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">{t("inventoryValue")}</p>
+                  <p className="text-xl font-bold text-[#E8461E]">{fmt(inv.valor_inventario)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">{t("lowStock")}</p>
+                  <p className={`text-xl font-bold ${inv.stock_bajo > 0 ? "text-amber-600" : "text-slate-800"}`}>{inv.stock_bajo}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 }
