@@ -52,7 +52,7 @@ export default function StockMovements() {
                 const Icon = style.icon;
                 return (
                   <tr key={m.id} className="border-t hover:bg-slate-50">
-                    <td className="p-3 text-sm text-slate-500">{moment(m.createdAt).format("MMM D, h:mm A")}</td>
+                    <td className="p-3 text-sm text-slate-500">{moment(m.createdAt).format("D MMM, HH:mm")}</td>
                     <td className="p-3"><p className="text-sm font-medium text-slate-900">{m.product_name}</p><p className="text-xs text-slate-500">{m.sku}</p></td>
                     <td className="p-3"><span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium capitalize ${style.bg} ${style.color}`}><Icon className="h-3 w-3" />{m.movement_type}</span></td>
                     <td className="p-3 text-center font-mono text-sm"><span className={m.quantity >= 0 ? "text-emerald-600" : "text-red-600"}>{m.quantity >= 0 ? "+" : ""}{m.quantity}</span></td>

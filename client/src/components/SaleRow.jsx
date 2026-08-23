@@ -28,7 +28,7 @@ export default function SaleRow({ sale }) {
           <StatusBadge status={sale.status} />
         </div>
         <div className="flex items-center gap-3 mt-0.5">
-          <span className="text-xs text-slate-500">{moment(sale.sale_date || sale.createdAt).format("MMM D, h:mm A")}</span>
+          <span className="text-xs text-slate-500">{moment(sale.sale_date || sale.createdAt).format("D MMM, HH:mm")}</span>
           {sale.customer_name && <span className="text-xs text-slate-400">{sale.customer_name}</span>}
         </div>
       </div>

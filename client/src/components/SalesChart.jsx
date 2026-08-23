@@ -14,7 +14,7 @@ export default function SalesChart({ sales = [], title = "Sales Trend" }) {
     });
     return {
       day: date.format("ddd"),
-      date: date.format("MMM D"),
+      date: date.format("D MMM"),
       total: daySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0),
       count: daySales.length,
     };

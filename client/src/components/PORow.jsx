@@ -23,7 +23,7 @@ export default function PORow({ order }) {
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-xs text-slate-500">{order.supplier_name}</span>
           <span className="text-xs text-slate-400">
-            {moment(order.order_date || order.createdAt).format("MMM D, YYYY")}
+            {moment(order.order_date || order.createdAt).format("D MMM YYYY")}
           </span>
         </div>
       </div>
@@ -33,7 +33,7 @@ export default function PORow({ order }) {
       </div>
       {order.expected_date && (
         <div className="text-xs text-slate-500 flex-shrink-0">
-          ETA: {moment(order.expected_date).format("MMM D")}
+          ETA: {moment(order.expected_date).format("D MMM")}
         </div>
       )}
       <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-[#E8461E] transition-colors" />

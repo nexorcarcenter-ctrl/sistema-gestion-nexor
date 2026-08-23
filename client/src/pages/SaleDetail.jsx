@@ -29,7 +29,7 @@ export default function SaleDetail() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
         <div className="flex-1">
           <div className="flex items-center gap-3"><h1 className="text-2xl font-bold text-slate-900">{sale.sale_number}</h1><StatusBadge status={sale.status} /></div>
-          <p className="text-sm text-slate-500">{moment(sale.sale_date || sale.createdAt).format("MMMM D, YYYY h:mm A")}</p>
+          <p className="text-sm text-slate-500">{moment(sale.sale_date || sale.createdAt).format("D [de] MMMM [de] YYYY, HH:mm")}</p>
         </div>
         <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" />{t("printReceipt")}</Button>
       </div>

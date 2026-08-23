@@ -12,9 +12,9 @@ export default function PODetailSidebar({ order }) {
       <Card className="border-0 shadow-sm">
         <CardHeader><CardTitle className="text-sm">{t("orderDetails")}</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-slate-500">{t("orderDate")}</span><span>{moment(order.order_date || order.createdAt).format("MMM D, YYYY")}</span></div>
-          {order.expected_date && <div className="flex justify-between"><span className="text-slate-500">{t("expectedDate")}</span><span>{moment(order.expected_date).format("MMM D, YYYY")}</span></div>}
-          {order.received_date && <div className="flex justify-between"><span className="text-slate-500">{t("received")}</span><span>{moment(order.received_date).format("MMM D, YYYY")}</span></div>}
+          <div className="flex justify-between"><span className="text-slate-500">{t("orderDate")}</span><span>{moment(order.order_date || order.createdAt).format("D MMM YYYY")}</span></div>
+          {order.expected_date && <div className="flex justify-between"><span className="text-slate-500">{t("expectedDate")}</span><span>{moment(order.expected_date).format("D MMM YYYY")}</span></div>}
+          {order.received_date && <div className="flex justify-between"><span className="text-slate-500">{t("received")}</span><span>{moment(order.received_date).format("D MMM YYYY")}</span></div>}
           <div className="flex justify-between"><span className="text-slate-500">{t("paymentMethod")}</span><StatusBadge status={order.payment_status} /></div>
         </CardContent>
       </Card>
