@@ -28,7 +28,9 @@ function buildNavSections(rol) {
     { label: "inventarioSection", items: [{ key: "products", icon: Package, page: "Products" }, { key: "categories", icon: FolderOpen, page: "Categories" }, { key: "movements", icon: ArrowLeftRight, page: "StockMovements" }, { key: "remitos", icon: FileText, page: "Remitos" }] },
     { label: "comprasSection", items: [{ key: "purchaseOrders", icon: Truck, page: "PurchaseOrders" }, { key: "suppliers", icon: Users, page: "Suppliers" }] },
     { label: "configSection", items: [{ key: "serviceTypes", icon: Wrench, page: "ServiceTypes" }, { key: "paymentMethods", icon: CreditCard, page: "PaymentMethods" }, { key: "cashRegister", icon: Wallet, page: "CashRegister" }] },
-    { label: "analyticsSection", items: [{ key: "reports", icon: BarChart3, page: "Reports" }, ...(puede(rol, "verReportes") ? [{ key: "adminDashboard", icon: TrendingUp, page: "AdminDashboard" }] : [])] },
+    // Analítica se muestra siempre: quien no la tiene habilitada entra y ve
+    // "Próximamente". Esconder el enlace ocultaría que la sección existe.
+    { label: "analyticsSection", items: [{ key: "reports", icon: BarChart3, page: "Reports" }, { key: "adminDashboard", icon: TrendingUp, page: "AdminDashboard" }] },
     ...(puede(rol, "gestionarUsuarios") ? [{ label: "adminSection", items: [{ key: "usersPage", icon: Users, page: "UsersPage" }] }] : []),
   ];
 }
