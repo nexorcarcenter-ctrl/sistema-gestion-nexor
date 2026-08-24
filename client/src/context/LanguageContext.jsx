@@ -134,7 +134,10 @@ const translations = {
   activeOrders: "Órdenes Activas", todayAppointments: "Turnos de Hoy", inWorkshop: "En el taller",
   units: "u.", sold: "vendidos",
   salesByCategory: "Ventas por Categoría", paymentMethods: "Formas de Cobro",
-  expenses: "Gastos",
+  expenses: "Gastos", companyExpenses: "Gastos de la Empresa",
+  grossProfitLabel: "Utilidad Bruta", netResult: "Resultado Neto", netMargin: "Margen Neto",
+  resultChain: "Del ingreso al resultado", expensesByCategory: "Gastos por Categoría",
+  profitLoss: "Ganancia", lossLabel: "Pérdida",
   customPeriod: "Personalizado", pickMonth: "Elegir mes…", from: "Desde", to: "Hasta",
 };
 

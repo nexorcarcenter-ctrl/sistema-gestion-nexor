@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Report } from "@/entities/Report";
-import { DollarSign, TrendingUp, ShoppingCart, Percent, Package } from "lucide-react";
+import { DollarSign, TrendingUp, ShoppingCart, Percent, Package, Receipt, Scale } from "lucide-react";
 import PeriodPicker from "../components/PeriodPicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import * as RC from "recharts";
@@ -60,7 +60,8 @@ export default function Reports() {
     mes: mesCorto(s.mes),
     Ingresos: s.ingresos,
     Costo: s.costo,
-    Utilidad: s.utilidad,
+    Gastos: s.gastos,
+    Resultado: s.resultado,
   }));
 
   const composicion = a
@@ -100,18 +101,20 @@ export default function Reports() {
               color="text-[#E8461E]" bgColor="bg-[#E8461E]/5"
             />
             <StatCard
-              title={t("productCost")} value={fmt(a.costo_productos)} icon={Package}
-              subtitle={<DeltaBadge actual={a.costo_productos} anterior={prev?.costo_productos} invertir />}
-              color="text-amber-600" bgColor="bg-amber-50"
-            />
-            <StatCard
-              title={t("profit")} value={fmt(a.utilidad)} icon={TrendingUp}
+              title={t("grossProfitLabel")} value={fmt(a.utilidad)} icon={TrendingUp}
               subtitle={<DeltaBadge actual={a.utilidad} anterior={prev?.utilidad} />}
               color="text-emerald-600" bgColor="bg-emerald-50"
             />
             <StatCard
-              title={t("profitMargin")} value={pct(a.margen)} icon={Percent}
-              color="text-blue-600" bgColor="bg-blue-50"
+              title={t("companyExpenses")} value={fmt(a.gastos)} icon={Receipt}
+              subtitle={<DeltaBadge actual={a.gastos} anterior={prev?.gastos} invertir />}
+              color="text-amber-600" bgColor="bg-amber-50"
+            />
+            <StatCard
+              title={t("netResult")} value={fmt(a.resultado_neto)} icon={Scale}
+              subtitle={<DeltaBadge actual={a.resultado_neto} anterior={prev?.resultado_neto} />}
+              color={a.resultado_neto >= 0 ? "text-emerald-600" : "text-red-600"}
+              bgColor={a.resultado_neto >= 0 ? "bg-emerald-50" : "bg-red-50"}
             />
             <StatCard
               title={t("transactions")} value={a.ventas} icon={ShoppingCart}
@@ -121,6 +124,45 @@ export default function Reports() {
           </div>
 
           {sinDatos && <Vacio>{t("noDataPeriod")}</Vacio>}
+
+          {/* La cadena completa: de lo facturado a lo que realmente queda */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader><CardTitle className="text-sm">{t("resultChain")}</CardTitle></CardHeader>
+            <CardContent>
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 text-slate-600">{t("totalRevenue")}</td>
+                    <td className="py-2 text-right font-semibold tabular-nums">{fmt(a.ingresos)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 text-slate-500 pl-4">− {t("productCost")}</td>
+                    <td className="py-2 text-right text-amber-700 tabular-nums">{fmt(a.costo_productos)}</td>
+                  </tr>
+                  <tr className="border-b-2 border-slate-200">
+                    <td className="py-2 font-medium text-slate-700">= {t("grossProfitLabel")}</td>
+                    <td className="py-2 text-right font-bold text-emerald-700 tabular-nums">{fmt(a.utilidad)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 text-slate-500 pl-4">− {t("companyExpenses")}</td>
+                    <td className="py-2 text-right text-amber-700 tabular-nums">{fmt(a.gastos)}</td>
+                  </tr>
+                  <tr>
+                    <td className={`py-2.5 font-bold ${a.resultado_neto >= 0 ? "text-slate-800" : "text-red-700"}`}>
+                      = {t("netResult")}
+                    </td>
+                    <td className={`py-2.5 text-right text-lg font-bold tabular-nums ${a.resultado_neto >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                      {fmt(a.resultado_neto)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-slate-400 mt-2">
+                {a.resultado_neto >= 0 ? t("profitLoss") : t("lossLabel")} · {t("netMargin")}: {pct(a.margen_neto)}
+                {" · "}{t("profitMargin")}: {pct(a.margen)}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Evolución + composición */}
           <div className="grid lg:grid-cols-3 gap-4">
@@ -136,7 +178,8 @@ export default function Reports() {
                     <RC.Legend wrapperStyle={{ fontSize: 11 }} />
                     <RC.Bar dataKey="Ingresos" fill="#94a3b8" radius={[4, 4, 0, 0]} />
                     <RC.Bar dataKey="Costo" fill="#fb923c" radius={[4, 4, 0, 0]} />
-                    <RC.Bar dataKey="Utilidad" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                    <RC.Bar dataKey="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                    <RC.Bar dataKey="Resultado" fill="#14b8a6" radius={[4, 4, 0, 0]} />
                   </RC.BarChart>
                 </RC.ResponsiveContainer>
               </CardContent>
@@ -270,6 +313,33 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Gastos por categoría */}
+          {!!top?.gastos?.length && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">{t("expensesByCategory")}</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {top.gastos.map((g, i) => {
+                    const totalG = top.gastos.reduce((s2, x) => s2 + x.monto, 0);
+                    const porcentaje = totalG > 0 ? (g.monto / totalG) * 100 : 0;
+                    return (
+                      <div key={g.nombre}>
+                        <div className="flex justify-between items-baseline text-sm mb-1">
+                          <span className="text-slate-600 truncate">{g.nombre}</span>
+                          <span className="font-bold shrink-0 ml-2">{fmt(g.monto)}</span>
+                        </div>
+                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-amber-500" style={{ width: `${porcentaje}%` }} />
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{g.cantidad} gasto(s) · {porcentaje.toFixed(0)}%</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Inventario */}
           {inv && (

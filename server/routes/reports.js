@@ -75,16 +75,29 @@ async function totales(desde, hasta) {
       (SELECT COALESCE(SUM(costo),0)   FROM prod) AS costo_productos
   `, [desde, hasta]);
 
+  // Los gastos de la empresa no dependen de las ventas, van por su cuenta
+  const { rows: filasGastos } = await pool.query(`
+    SELECT COALESCE(SUM(amount_uyu), 0) AS gastos
+    FROM expenses
+    WHERE expense_date >= $1::date AND expense_date <= $2::date
+  `, [desde, hasta]);
+
   const r = rows[0] || {};
   const ventas            = Number(r.ventas) || 0;
   const ingresos          = Number(r.ingresos) || 0;
   const ingresosProductos = Number(r.ingresos_productos) || 0;
   const costoProductos    = Number(r.costo_productos) || 0;
+  const gastos            = Number(filasGastos[0]?.gastos) || 0;
 
   // La mano de obra es ganancia pura: no se le imputa costo.
   // Se calcula por diferencia para no perder las ventas sin ítems cargados.
   const ingresosServicios = Math.max(ingresos - ingresosProductos, 0);
-  const utilidad          = ingresos - costoProductos;
+
+  // Dos niveles distintos, y conviene no confundirlos:
+  // la utilidad bruta solo descuenta la mercaderia vendida; el resultado neto
+  // descuenta ademas alquiler, sueldos y todo lo que cuesta tener abierto.
+  const utilidad      = ingresos - costoProductos;
+  const resultadoNeto = utilidad - gastos;
 
   return {
     ventas,
@@ -94,6 +107,9 @@ async function totales(desde, hasta) {
     costo_productos: costoProductos,
     utilidad,
     margen: ingresos > 0 ? (utilidad / ingresos) * 100 : 0,
+    gastos,
+    resultado_neto: resultadoNeto,
+    margen_neto: ingresos > 0 ? (resultadoNeto / ingresos) * 100 : 0,
     ticket_promedio: ventas > 0 ? ingresos / ventas : 0,
   };
 }
@@ -175,16 +191,25 @@ router.get("/timeseries", async (req, res) => {
       ),
       ingresos AS (
         SELECT mes, SUM(total) AS ingresos, COUNT(*) AS ventas FROM v GROUP BY mes
+      ),
+      gastos AS (
+        SELECT date_trunc('month', expense_date) AS mes, SUM(amount_uyu) AS gastos
+        FROM expenses
+        WHERE expense_date >= date_trunc('month', CURRENT_DATE) - make_interval(months => $1::int - 1)
+        GROUP BY 1
       )
       SELECT
         to_char(m.mes, 'YYYY-MM')                AS mes,
         COALESCE(i.ingresos, 0)                  AS ingresos,
         COALESCE(c.costo, 0)                     AS costo,
         COALESCE(i.ingresos, 0) - COALESCE(c.costo, 0) AS utilidad,
+        COALESCE(g.gastos, 0)                    AS gastos,
+        COALESCE(i.ingresos, 0) - COALESCE(c.costo, 0) - COALESCE(g.gastos, 0) AS resultado,
         COALESCE(i.ventas, 0)                    AS ventas
       FROM meses m
       LEFT JOIN ingresos i ON i.mes = m.mes
       LEFT JOIN costos   c ON c.mes = m.mes
+      LEFT JOIN gastos   g ON g.mes = m.mes
       ORDER BY m.mes
     `, [meses]);
 
@@ -193,6 +218,8 @@ router.get("/timeseries", async (req, res) => {
       ingresos: Number(r.ingresos) || 0,
       costo: Number(r.costo) || 0,
       utilidad: Number(r.utilidad) || 0,
+      gastos: Number(r.gastos) || 0,
+      resultado: Number(r.resultado) || 0,
       ventas: Number(r.ventas) || 0,
     })));
   } catch (err) {
@@ -246,12 +273,23 @@ router.get("/top", async (req, res) => {
       ORDER BY monto DESC
     `, [from, to]);
 
+    const { rows: gastos } = await pool.query(`
+      SELECT COALESCE(NULLIF(category_name, ''), 'Sin categoría') AS nombre,
+             SUM(amount_uyu) AS monto,
+             COUNT(*)        AS cantidad
+      FROM expenses
+      WHERE expense_date >= $1::date AND expense_date <= $2::date
+      GROUP BY 1
+      ORDER BY monto DESC
+    `, [from, to]);
+
     const num = (r, ...ks) => ks.reduce((o, k) => ({ ...o, [k]: Number(r[k]) || 0 }), { ...r });
     res.json({
       productos: productos.map((r) => num(r, "cantidad", "venta", "utilidad")),
       servicios: servicios.map((r) => num(r, "cantidad", "venta")),
       categorias: categorias.map((r) => num(r, "venta")),
       formas_pago: formasPago.map((r) => num(r, "monto", "operaciones")),
+      gastos: gastos.map((r) => num(r, "monto", "cantidad")),
     });
   } catch (err) {
     console.error("Reports top error:", err);

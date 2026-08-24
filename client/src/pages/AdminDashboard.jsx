@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Report } from "@/entities/Report";
 import { ServiceOrder } from "@/entities/ServiceOrder";
-import { DollarSign, TrendingUp, ShoppingBag, Wrench, Car, ChevronRight } from "lucide-react";
+import { DollarSign, TrendingUp, ShoppingBag, Wrench, Car, ChevronRight, Scale } from "lucide-react";
 import * as RC from "recharts";
 import StatCard from "../components/StatCard";
 import DeltaBadge from "../components/DeltaBadge";
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
         <div className="text-center py-16 text-slate-400">Cargando...</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
               title="Facturado" value={fmt(a.ingresos)} icon={DollarSign}
               subtitle={<DeltaBadge actual={a.ingresos} anterior={prev?.ingresos} />}
@@ -105,13 +105,19 @@ export default function AdminDashboard() {
             />
             <StatCard
               title="Mano de Obra Facturada" value={fmt(a.ingresos_servicios)} icon={Wrench}
-              subtitle="Ingreso sin costo asociado"
+              subtitle="Ingreso sin costo"
               color="text-blue-600" bgColor="bg-blue-50"
             />
             <StatCard
-              title="Utilidad" value={fmt(a.utilidad)} icon={TrendingUp}
+              title="Utilidad Bruta" value={fmt(a.utilidad)} icon={TrendingUp}
               subtitle={`${a.margen.toFixed(1)}% de margen`}
               color="text-emerald-600" bgColor="bg-emerald-50"
+            />
+            <StatCard
+              title="Resultado Neto" value={fmt(a.resultado_neto)} icon={Scale}
+              subtitle={`Después de ${fmt(a.gastos)} de gastos`}
+              color={a.resultado_neto >= 0 ? "text-emerald-600" : "text-red-600"}
+              bgColor={a.resultado_neto >= 0 ? "bg-emerald-50" : "bg-red-50"}
             />
           </div>
 
