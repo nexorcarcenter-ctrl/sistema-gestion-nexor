@@ -27,7 +27,7 @@ function buildNavSections(rol) {
     { label: "ventasSection", items: [{ key: "pos", icon: ShoppingCart, page: "PointOfSale" }, { key: "newSaleDirect", icon: Plus, page: "NewSale" }, { key: "sales", icon: Receipt, page: "Sales" }] },
     { label: "inventarioSection", items: [{ key: "products", icon: Package, page: "Products" }, { key: "categories", icon: FolderOpen, page: "Categories" }, { key: "movements", icon: ArrowLeftRight, page: "StockMovements" }, { key: "remitos", icon: FileText, page: "Remitos" }] },
     { label: "comprasSection", items: [{ key: "purchaseOrders", icon: Truck, page: "PurchaseOrders" }, { key: "suppliers", icon: Users, page: "Suppliers" }] },
-    { label: "configSection", items: [{ key: "serviceTypes", icon: Wrench, page: "ServiceTypes" }, { key: "paymentMethods", icon: CreditCard, page: "PaymentMethods" }, { key: "cashRegister", icon: Wallet, page: "CashRegister" }, ...(puede(rol, "verGastos") ? [{ key: "expenses", icon: Receipt, page: "Expenses" }] : [])] },
+    { label: "configSection", items: [{ key: "serviceTypes", icon: Wrench, page: "ServiceTypes" }, { key: "paymentMethods", icon: CreditCard, page: "PaymentMethods" }, { key: "cashRegister", icon: Wallet, page: "CashRegister" }, { key: "expenses", icon: Receipt, page: "Expenses" }] },
     // Analítica se muestra siempre: quien no la tiene habilitada entra y ve
     // "Próximamente". Esconder el enlace ocultaría que la sección existe.
     { label: "analyticsSection", items: [{ key: "reports", icon: BarChart3, page: "Reports" }, { key: "adminDashboard", icon: TrendingUp, page: "AdminDashboard" }] },

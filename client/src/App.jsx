@@ -38,7 +38,6 @@ import ExitInspectionPage from "./pages/ExitInspectionPage";
 import UsersPage from "./pages/UsersPage";
 import Agenda from "./pages/Agenda";
 import ComingSoonGuard from "./components/ComingSoonGuard";
-import RequierePermiso from "./components/RequierePermiso";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
@@ -146,7 +145,7 @@ function AppRoutes() {
                 <Route path="/service-types" element={<ServiceTypes />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/cash-register" element={<CashRegister />} />
-                <Route path="/expenses" element={<RequierePermiso permiso="verGastos"><Expenses /></RequierePermiso>} />
+                <Route path="/expenses" element={<ComingSoonGuard permiso="verGastos"><Expenses /></ComingSoonGuard>} />
                 <Route path="/reports" element={<ComingSoonGuard permiso="verReportes"><Reports /></ComingSoonGuard>} />
                 <Route path="/admin-dashboard" element={<ComingSoonGuard permiso="verReportes"><AdminDashboard /></ComingSoonGuard>} />
                 <Route path="/cars" element={<Cars />} />
