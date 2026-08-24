@@ -53,6 +53,21 @@ const PERMISOS = {
   },
 };
 
+/**
+ * Tablas que no todos pueden mirar. La API de entidades es generica: sin esto,
+ * cualquier usuario autenticado podria pedir /api/entities/expenses y ver los
+ * sueldos y el alquiler.
+ */
+const TABLAS_RESTRINGIDAS = {
+  expenses: "verGastos",
+  expense_categories: "verGastos",
+};
+
+function puedeAcceder(rol, tabla) {
+  const requiere = TABLAS_RESTRINGIDAS[tabla];
+  return !requiere || puede(rol, requiere);
+}
+
 function permisosDe(rol) {
   return PERMISOS[rol] || PERMISOS[ROL_POR_DEFECTO];
 }
@@ -91,8 +106,8 @@ function rolValido(rol) {
 }
 
 module.exports = {
-  ROLES, ROL_POR_DEFECTO, ARCHIVABLES,
-  puede, rolValido,
+  ROLES, ROL_POR_DEFECTO, ARCHIVABLES, TABLAS_RESTRINGIDAS,
+  puede, rolValido, puedeAcceder,
   esArchivable, comoArchivar,
   puedeArchivar, puedeEliminar, puedeDarDeBaja,
 };

@@ -134,6 +134,7 @@ const translations = {
   activeOrders: "Órdenes Activas", todayAppointments: "Turnos de Hoy", inWorkshop: "En el taller",
   units: "u.", sold: "vendidos",
   salesByCategory: "Ventas por Categoría", paymentMethods: "Formas de Cobro",
+  expenses: "Gastos",
   customPeriod: "Personalizado", pickMonth: "Elegir mes…", from: "Desde", to: "Hasta",
 };
 

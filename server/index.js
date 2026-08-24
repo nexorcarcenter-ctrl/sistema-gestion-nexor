@@ -59,14 +59,28 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-// Run migrations on startup
+// Corre todas las migraciones en orden alfabetico, en cada arranque.
+//
+// Estan escritas para poder ejecutarse repetidas veces sin efecto
+// (CREATE TABLE IF NOT EXISTS, INSERT ... WHERE NOT EXISTS), asi que un
+// deploy aplica solo lo que falte sin pasos manuales. Si una falla se
+// registra y se sigue: mejor levantar con una tabla de menos que no levantar.
 async function runMigrations() {
+  const dir = path.join(__dirname, "migrations");
+  let archivos;
   try {
-    const sql = fs.readFileSync(path.join(__dirname, "migrations/001_initial.sql"), "utf8");
-    await pool.query(sql);
-    console.log("✓ Migrations OK");
+    archivos = fs.readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
   } catch (err) {
-    console.error("Migration error:", err.message);
+    console.error("No se pudo leer migrations/:", err.message);
+    return;
+  }
+  for (const archivo of archivos) {
+    try {
+      await pool.query(fs.readFileSync(path.join(dir, archivo), "utf8"));
+      console.log(`✓ ${archivo}`);
+    } catch (err) {
+      console.error(`Migration error en ${archivo}:`, err.message);
+    }
   }
 }
 

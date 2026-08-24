@@ -24,14 +24,28 @@ const ENTITY_TABLES = {
   service_types: "service_types",
   stock_movements: "stock_movements",
   suppliers: "suppliers",
+  expenses: "expenses",
+  expense_categories: "expense_categories",
 };
 
 function getTable(entity) {
   return ENTITY_TABLES[entity];
 }
 
+// Antes de cualquier operacion: hay tablas que no todos pueden ni mirar.
+router.use("/:entity", (req, res, next) => {
+  const table = getTable(req.params.entity);
+  if (table && !permisos.puedeAcceder(req.user?.role, table)) {
+    return res.status(403).json({ error: "No tenés permisos para acceder a esta información" });
+  }
+  next();
+});
+
 // Whitelist de columnas válidas por tabla (previene SQL injection)
 const VALID_COLUMNS = new Set([
+  // Gastos de la empresa
+  "expense_date", "category_id", "category_name", "amount_uyu", "is_fixed",
+  "payment_method_id", "payment_method_name", "created_by_name",
   "id", "name", "email", "username", "full_name", "cargo", "role", "is_active",
   "status", "sku", "barcode", "description", "category", "unit_price", "cost_price",
   "stock_quantity", "min_stock", "max_stock", "supplier_id", "supplier_name",
