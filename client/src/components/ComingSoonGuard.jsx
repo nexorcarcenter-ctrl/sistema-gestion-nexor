@@ -1,16 +1,26 @@
 import { useState, useEffect } from "react";
 import User from "@/entities/User";
+import { puede } from "@/permissions";
 import { Lock } from "lucide-react";
 
-export default function ComingSoonGuard({ children }) {
-  const [isAdmin, setIsAdmin] = useState(null);
+/**
+ * Tapa una sección con el cartel de "Próximamente".
+ *
+ * Sirve para dos cosas distintas que se ven igual: módulos a medio terminar
+ * y módulos terminados que todavía no se le habilitan a todos. Cuál de las
+ * dos aplica lo decide el permiso que se le pase.
+ */
+export default function ComingSoonGuard({ children, permiso = "verModulosEnConstruccion" }) {
+  const [habilitado, setHabilitado] = useState(null);
 
   useEffect(() => {
-    User.me().then(u => setIsAdmin(u?.role === "admin")).catch(() => setIsAdmin(false));
-  }, []);
+    User.me()
+      .then((u) => setHabilitado(puede(u?.role, permiso)))
+      .catch(() => setHabilitado(false));
+  }, [permiso]);
 
-  if (isAdmin === null) return null;
-  if (isAdmin) return children;
+  if (habilitado === null) return null;
+  if (habilitado) return children;
 
   return (
     <div className="relative min-h-[70vh]">

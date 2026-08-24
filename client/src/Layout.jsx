@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import User from "@/entities/User";
+import { puede, etiquetaDeRol } from "@/permissions";
 import {
   LayoutDashboard, ShoppingCart, Receipt, Package, Truck,
   BarChart3, TrendingUp, Users, ArrowLeftRight, FolderOpen, Wrench, ClipboardList, Wallet,
@@ -19,7 +20,7 @@ const CARGO_LABELS = {
   otro: "Otro",
 };
 
-function buildNavSections(isAdmin) {
+function buildNavSections(rol) {
   return [
     { label: "overview", items: [{ key: "dashboard", icon: LayoutDashboard, page: "Dashboard" }] },
     { label: "tallerSection", items: [{ key: "workshopBoard", icon: LayoutGrid, page: "WorkshopBoard" }, { key: "serviceOrders", icon: ClipboardList, page: "ServiceOrders" }, { key: "newServiceOrder", icon: PlusCircle, page: "NewServiceOrder" }, { key: "agenda", icon: CalendarDays, page: "Agenda" }] },
@@ -27,8 +28,8 @@ function buildNavSections(isAdmin) {
     { label: "inventarioSection", items: [{ key: "products", icon: Package, page: "Products" }, { key: "categories", icon: FolderOpen, page: "Categories" }, { key: "movements", icon: ArrowLeftRight, page: "StockMovements" }, { key: "remitos", icon: FileText, page: "Remitos" }] },
     { label: "comprasSection", items: [{ key: "purchaseOrders", icon: Truck, page: "PurchaseOrders" }, { key: "suppliers", icon: Users, page: "Suppliers" }] },
     { label: "configSection", items: [{ key: "serviceTypes", icon: Wrench, page: "ServiceTypes" }, { key: "paymentMethods", icon: CreditCard, page: "PaymentMethods" }, { key: "cashRegister", icon: Wallet, page: "CashRegister" }] },
-    { label: "analyticsSection", items: [{ key: "reports", icon: BarChart3, page: "Reports" }, ...(isAdmin ? [{ key: "adminDashboard", icon: TrendingUp, page: "AdminDashboard" }] : [])] },
-    ...(isAdmin ? [{ label: "adminSection", items: [{ key: "usersPage", icon: Users, page: "UsersPage" }] }] : []),
+    { label: "analyticsSection", items: [{ key: "reports", icon: BarChart3, page: "Reports" }, ...(puede(rol, "verReportes") ? [{ key: "adminDashboard", icon: TrendingUp, page: "AdminDashboard" }] : [])] },
+    ...(puede(rol, "gestionarUsuarios") ? [{ label: "adminSection", items: [{ key: "usersPage", icon: Users, page: "UsersPage" }] }] : []),
   ];
 }
 
@@ -56,9 +57,9 @@ function UserFooter({ user, onLogout }) {
   );
 }
 
-function SidebarContent({ currentPageName, onLinkClick, t, isAdmin, user, onLogout }) {
+function SidebarContent({ currentPageName, onLinkClick, t, rol, user, onLogout }) {
   const isActive = (page) => currentPageName === page || (DETAIL_PAGES.includes(currentPageName) && page === "Dashboard");
-  const navSections = buildNavSections(isAdmin);
+  const navSections = buildNavSections(rol);
 
   return (
     <div className="flex flex-col h-full">
@@ -97,14 +98,11 @@ function SidebarContent({ currentPageName, onLinkClick, t, isAdmin, user, onLogo
 function LayoutContent({ children, currentPageName }) {
   const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const rol = currentUser?.role;
 
   useEffect(() => {
-    User.me().then(user => {
-      setCurrentUser(user);
-      if (user?.role === "admin") setIsAdmin(true);
-    }).catch(() => {});
+    User.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   const handleLogout = async () => {
@@ -120,7 +118,7 @@ function LayoutContent({ children, currentPageName }) {
           currentPageName={currentPageName}
           onLinkClick={() => {}}
           t={t}
-          isAdmin={isAdmin}
+          rol={rol}
           user={currentUser}
           onLogout={handleLogout}
         />
@@ -142,7 +140,7 @@ function LayoutContent({ children, currentPageName }) {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
-          {buildNavSections(isAdmin).map((section) => {
+          {buildNavSections(rol).map((section) => {
             if (section.items.length === 0) return null;
             return (
               <div key={section.label}>

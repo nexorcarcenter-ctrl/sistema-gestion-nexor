@@ -1,14 +1,16 @@
 const router = require("express").Router();
 const pool = require("../db");
+const permisos = require("../permissions");
 
-// Solo admin puede ver información financiera
-function requireAdmin(req, res, next) {
-  if (req.user?.role !== "admin") {
+// Reportes y rentabilidad se comercializa como modulo aparte: quien puede
+// verlo se define en permissions.js, no acá.
+function requiereVerReportes(req, res, next) {
+  if (!permisos.puede(req.user?.role, "verReportes")) {
     return res.status(403).json({ error: "Requiere permisos de administrador" });
   }
   next();
 }
-router.use(requireAdmin);
+router.use(requiereVerReportes);
 
 // Ventas cobradas del período + sus líneas que son productos del catálogo.
 // Las líneas de servicio no matchean products (guardan un service_type_id),

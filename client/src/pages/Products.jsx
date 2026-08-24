@@ -6,6 +6,7 @@ import { Category } from "@/entities/Category";
 import { Supplier } from "@/entities/Supplier";
 import { CarBrand } from "@/entities/CarBrand";
 import User from "@/entities/User";
+import { puedeDarDeBaja } from "@/permissions";
 import { Search, Plus, Package, Upload, ChevronUp, ChevronDown, ChevronsUpDown, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,8 @@ export default function Products() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => { User.me().then(u => { if (u?.role === "admin") setIsAdmin(true); }).catch(() => {}); }, []);
+  const [rol, setRol] = useState(null);
+  useEffect(() => { User.me().then(u => { setRol(u?.role); if (u?.role === "admin") setIsAdmin(true); }).catch(() => {}); }, []);
   const [search, setSearch] = useState(""); const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState(() => new URLSearchParams(window.location.search).get("category") || "all");
   const [showForm, setShowForm] = useState(false); const [editProduct, setEditProduct] = useState(null);
@@ -202,6 +204,7 @@ export default function Products() {
                     product={p}
                     onEdit={(p) => { setEditProduct(p); setShowForm(true); }}
                     onDelete={(id) => deleteMutation.mutate(id)}
+                    puedeEliminar={puedeDarDeBaja(rol, "products")}
                     onAddStock={handleAddStock}
                   />
                 ))}

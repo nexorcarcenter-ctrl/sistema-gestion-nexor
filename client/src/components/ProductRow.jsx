@@ -17,7 +17,7 @@ const STATUS_LABELS = {
   discontinued: "Descontinuado",
 };
 
-export default function ProductRow({ product, onEdit, onDelete, onAddStock }) {
+export default function ProductRow({ product, onEdit, onDelete, onAddStock, puedeEliminar = true }) {
   const [showAddStock, setShowAddStock] = useState(false);
   const [addQty, setAddQty] = useState("");
   const [adding, setAdding] = useState(false);
@@ -148,12 +148,14 @@ export default function ProductRow({ product, onEdit, onDelete, onAddStock }) {
           >
             <Edit2 className="h-3 w-3" />Editar
           </button>
+          {puedeEliminar && (
           <button
             onClick={() => onDelete?.(product.id)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 text-xs font-medium transition-colors"
           >
             <Trash2 className="h-3 w-3" />Eliminar
           </button>
+          )}
         </div>
       </td>
     </tr>

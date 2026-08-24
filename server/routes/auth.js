@@ -2,6 +2,7 @@ const router = require("express").Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../db");
+const permisos = require("../permissions");
 const authMiddleware = require("../middleware/auth");
 
 // Register — deshabilitado, solo el admin puede crear usuarios desde el panel
@@ -59,7 +60,7 @@ router.put("/me", authMiddleware, async (req, res) => {
 // ── Admin: gestión de usuarios ─────────────────────────────────────────────
 
 function requireAdmin(req, res, next) {
-  if (req.user?.role !== "admin") return res.status(403).json({ error: "Acceso restringido" });
+  if (!permisos.puede(req.user?.role, "gestionarUsuarios")) return res.status(403).json({ error: "Acceso restringido" });
   next();
 }
 
@@ -87,7 +88,7 @@ router.post("/users", authMiddleware, requireAdmin, async (req, res) => {
     const existing = await pool.query("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (existing.rows.length > 0) return res.status(400).json({ error: "El usuario ya está registrado" });
 
-    const validRole = role === "admin" ? "admin" : "user";
+    const validRole = permisos.rolValido(role) ? role : permisos.ROL_POR_DEFECTO;
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO users (username, email, password_hash, full_name, cargo, role, is_active, created_at, updated_at)
@@ -109,7 +110,7 @@ router.put("/users/:id", authMiddleware, requireAdmin, async (req, res) => {
     const { fullName, cargo, isActive, username, role } = req.body;
     const fields = ["full_name = $1", "cargo = $2", "is_active = $3", "updated_at = NOW()"];
     const values = [fullName, cargo, isActive !== false];
-    if (role && (role === "admin" || role === "user")) {
+    if (role && permisos.rolValido(role)) {
       fields.push(`role = $${values.length + 1}`);
       values.push(role);
     }

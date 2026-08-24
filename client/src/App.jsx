@@ -144,8 +144,8 @@ function AppRoutes() {
                 <Route path="/service-types" element={<ServiceTypes />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/cash-register" element={<CashRegister />} />
-                <Route path="/reports" element={<ComingSoonGuard><Reports /></ComingSoonGuard>} />
-                <Route path="/admin-dashboard" element={<ComingSoonGuard><AdminDashboard /></ComingSoonGuard>} />
+                <Route path="/reports" element={<ComingSoonGuard permiso="verReportes"><Reports /></ComingSoonGuard>} />
+                <Route path="/admin-dashboard" element={<ComingSoonGuard permiso="verReportes"><AdminDashboard /></ComingSoonGuard>} />
                 <Route path="/cars" element={<Cars />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

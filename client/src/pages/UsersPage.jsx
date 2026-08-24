@@ -55,6 +55,7 @@ function UserFormDialog({ open, onClose, onSave, saving, error }) {
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               <option value="user">Colaborador</option>
+              <option value="gerente">Gerente</option>
               <option value="admin">Admin</option>
             </select>
           </div>
@@ -118,6 +119,7 @@ function EditUserDialog({ open, onClose, user, onSave, saving, error }) {
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               <option value="user">Colaborador</option>
+              <option value="gerente">Gerente</option>
               <option value="admin">Admin</option>
             </select>
           </div>
@@ -357,6 +359,10 @@ export default function UsersPage() {
                 {u.role === "admin" ? (
                   <span className="inline-flex items-center gap-1 text-[10px] bg-[#E8461E]/10 text-[#c73a15] px-2 py-0.5 rounded-full font-medium">
                     <ShieldCheck className="h-3 w-3" />Admin
+                  </span>
+                ) : u.role === "gerente" ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                    <ShieldCheck className="h-3 w-3" />Gerente
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">

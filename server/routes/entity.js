@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const pool = require("../db");
+const permisos = require("../permissions");
 
 function requireAdminForWrite(req, res, next) {
   next();
@@ -192,14 +193,32 @@ router.put("/:entity/:id", requireAdminForWrite, async (req, res) => {
   }
 });
 
-// Delete — solo admin puede eliminar registros
-router.delete("/:entity/:id", (req, res, next) => {
-  if (req.user?.role !== "admin") return res.status(403).json({ error: "Solo administradores pueden eliminar registros" });
-  next();
-}, async (req, res) => {
+// Dar de baja un registro.
+//
+// Lo que el catalogo referencia desde el pasado se archiva en vez de borrarse:
+// los reportes buscan el costo de cada producto vendido en la tabla de
+// productos, y si la fila desaparece las ventas viejas se quedan sin costo,
+// inflando la utilidad de meses ya cerrados. Lo demas se borra de verdad.
+router.delete("/:entity/:id", async (req, res) => {
   try {
     const table = getTable(req.params.entity);
     if (!table) return res.status(404).json({ error: "Entity not found" });
+
+    const rol = req.user?.role;
+    if (!permisos.puedeDarDeBaja(rol, table)) {
+      return res.status(403).json({ error: "No tenés permisos para eliminar este registro" });
+    }
+
+    const archivo = permisos.comoArchivar(table);
+    if (archivo) {
+      const { rowCount } = await pool.query(
+        `UPDATE ${table} SET ${archivo.columna} = $1, updated_at = NOW() WHERE id = $2`,
+        [archivo.valorArchivado, req.params.id]
+      );
+      if (rowCount === 0) return res.status(404).json({ error: "No encontrado" });
+      return res.json({ success: true, archivado: true });
+    }
+
     await pool.query(`DELETE FROM ${table} WHERE id = $1`, [req.params.id]);
     res.json({ success: true });
   } catch (err) {
