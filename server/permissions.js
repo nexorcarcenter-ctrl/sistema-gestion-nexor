@@ -33,9 +33,7 @@ const PERMISOS = {
     eliminar: "*",
   },
   gerente: {
-    // Reportes y rentabilidad es un modulo que se comercializa aparte:
-    // queda reservado al admin aunque este terminado.
-    verReportes: false,
+    verReportes: true,
     verGastos: true,
     gestionarUsuarios: false,
     // Compras y Proveedores estan a medio hacer: no se le muestran todavia
