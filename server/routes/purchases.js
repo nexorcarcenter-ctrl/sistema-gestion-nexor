@@ -80,17 +80,26 @@ async function siguienteNumero(client) {
 async function moverStock(client, producto, cantidad, tipo, numero, motivo) {
   const anterior = Number(producto.stock_quantity) || 0;
   const nuevo = Math.max(0, anterior + cantidad);
+  // Se registra lo que de verdad se movio: si no alcanzaba el stock, el
+  // movimiento tiene que decirlo en lugar de mostrar una resta que no paso
+  const aplicado = nuevo - anterior;
+  const nota = aplicado !== cantidad ? ` (se pedía ${cantidad}, había ${anterior})` : "";
   await client.query("UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2", [nuevo, producto.id]);
   await client.query(
     `INSERT INTO stock_movements (product_id, product_name, sku, movement_type, quantity, previous_stock, new_stock, reference_type, reference_number, reason, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, 'purchase_order', $8, $9, NOW(), NOW())`,
-    [producto.id, producto.name, producto.sku || "", tipo, cantidad, anterior, nuevo, numero, motivo]
+    [producto.id, producto.name, producto.sku || "", tipo, aplicado, anterior, nuevo, numero, motivo + nota]
   );
   producto.stock_quantity = nuevo;
 }
 
-// Carga el stock, los costos y las lineas de una compra
-async function aplicarItems(client, orden, compra, proveedor) {
+// Carga el stock, los costos y las lineas de una compra.
+//
+// anterior sirve al editar: por producto, cuanto habia sumado la version
+// vieja y que costo tenia antes de esa compra. Se mueve solo la diferencia:
+// deshacer todo y volver a sumar pasaria por cero si ya se vendio parte, y
+// como el stock no baja de cero, el resultado final quedaria mal.
+async function aplicarItems(client, orden, compra, proveedor, anterior = {}) {
   const ids = compra.items.map((i) => i.product_id);
   const { rows: productos } = await client.query(
     "SELECT id, name, sku, stock_quantity, cost_price FROM products WHERE id::text = ANY($1) FOR UPDATE",
@@ -110,7 +119,15 @@ async function aplicarItems(client, orden, compra, proveedor) {
     const costoUyu = redondear(item.unit_cost * compra.exchange_rate);
     const total = redondear(item.quantity * item.unit_cost);
 
-    await moverStock(client, p, item.quantity, "purchase", orden.po_number, `Compra a ${proveedor.name}`);
+    const previo = anterior[String(p.id)];
+    const diferencia = item.quantity - (previo?.cantidad || 0);
+    if (diferencia !== 0) {
+      const motivo = previo ? `Corrección de compra a ${proveedor.name}` : `Compra a ${proveedor.name}`;
+      await moverStock(client, p, diferencia, diferencia > 0 ? "purchase" : "purchase_reversal", orden.po_number, motivo);
+    }
+    // El costo "de antes" es el que tenia el producto antes de la compra
+    // original, no el que le puso la version que se esta corrigiendo
+    const costoPrevio = previo ? previo.costoPrevio : p.cost_price;
     await client.query("UPDATE products SET cost_price = $1, updated_at = NOW() WHERE id = $2", [costoUyu, p.id]);
 
     await client.query(
@@ -119,7 +136,7 @@ async function aplicarItems(client, orden, compra, proveedor) {
           unit_cost, currency, unit_cost_uyu, total, previous_cost_price, purchase_date)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [orden.id, proveedor.id, proveedor.name, p.id, p.name, p.sku || "", item.quantity,
-       item.unit_cost, compra.currency, costoUyu, total, p.cost_price, compra.order_date]
+       item.unit_cost, compra.currency, costoUyu, total, costoPrevio, compra.order_date]
     );
     lineas.push({ product_id: String(p.id), product_name: p.name, sku: p.sku || "", quantity: item.quantity, unit_cost: item.unit_cost, total });
   }
@@ -128,9 +145,20 @@ async function aplicarItems(client, orden, compra, proveedor) {
 
 // Deshace el efecto de una compra en stock y costos. El costo solo se repone
 // si nadie lo cambio despues: pisar un ajuste manual seria peor que dejarlo.
-async function revertirItems(client, orden, motivo) {
+//
+// Al editar se pasa quedan: los productos que siguen en la compra no se
+// tocan aca (aplicarItems mueve solo la diferencia) y se devuelve lo que
+// habia de cada uno. Los que se sacaron de la compra si se descuentan.
+async function revertirItems(client, orden, motivo, quedan = []) {
   const { rows: items } = await client.query("SELECT * FROM purchase_order_items WHERE purchase_order_id = $1", [orden.id]);
+  const siguen = new Set(quedan.map((i) => String(i.product_id)));
+  const anterior = {};
   for (const item of items) {
+    if (siguen.has(String(item.product_id))) {
+      const a = anterior[item.product_id] ||= { cantidad: 0, costoPrevio: item.previous_cost_price };
+      a.cantidad += Number(item.quantity);
+      continue;
+    }
     const { rows } = await client.query(
       "SELECT id, name, sku, stock_quantity, cost_price FROM products WHERE id::text = $1 FOR UPDATE",
       [item.product_id]
@@ -144,6 +172,38 @@ async function revertirItems(client, orden, motivo) {
     }
   }
   await client.query("DELETE FROM purchase_order_items WHERE purchase_order_id = $1", [orden.id]);
+  return anterior;
+}
+
+// Antes de deshacer una compra: ¿alguna de esas unidades ya se vendio? Si
+// tenia 3, compre 5 y vendi 7, anular la compra pediria restar 5 de 1. El
+// stock no puede quedar negativo, asi que sin este chequeo quedaria en 0 y
+// nadie se enteraria de que faltan 4. nuevos es la version corregida al
+// editar; al anular va vacio.
+async function unidadesYaVendidas(client, orden, nuevos = []) {
+  const { rows } = await client.query(`
+    SELECT i.product_id, MAX(i.product_name) AS product_name, SUM(i.quantity) AS cantidad,
+           MAX(p.stock_quantity) AS stock
+    FROM purchase_order_items i
+    JOIN products p ON p.id::text = i.product_id
+    WHERE i.purchase_order_id = $1
+    GROUP BY i.product_id
+  `, [String(orden.id)]);
+  const nuevaCantidad = Object.fromEntries(nuevos.map((i) => [String(i.product_id), i.quantity]));
+  return rows
+    .map((r) => {
+      const queda = (Number(r.stock) || 0) - Number(r.cantidad) + (nuevaCantidad[r.product_id] || 0);
+      return { product_id: r.product_id, product_name: r.product_name, stock: Number(r.stock) || 0, faltan: -queda };
+    })
+    .filter((r) => r.faltan > 0);
+}
+
+function frenarSiYaSeVendio(faltantes, confirmado) {
+  if (!faltantes.length || confirmado) return;
+  const err = new Error("Parte de esta compra ya se vendió: el stock no alcanza para descontarla");
+  err.status = 409;
+  err.extra = { codigo: "stock_insuficiente", faltantes };
+  throw err;
 }
 
 // Crea o actualiza el gasto que representa la compra
@@ -232,7 +292,7 @@ async function enTransaccion(res, fn) {
   } catch (err) {
     await client.query("ROLLBACK");
     if (!err.status) console.error("Purchases error:", err);
-    res.status(err.status || 500).json({ error: err.status ? err.message : "Error al guardar la compra" });
+    res.status(err.status || 500).json({ error: err.status ? err.message : "Error al guardar la compra", ...(err.extra || {}) });
     return undefined;
   } finally {
     client.release();
@@ -315,7 +375,8 @@ router.put("/:id", async (req, res) => {
     if (await esCompraVieja(client, anterior)) fallar(409, "Esta compra es del sistema anterior y no se puede editar");
 
     const { proveedor, metodo } = await cargarReferencias(client, compra);
-    await revertirItems(client, anterior, `Corrección de ${anterior.po_number}`);
+    frenarSiYaSeVendio(await unidadesYaVendidas(client, anterior, compra.items), req.body.confirmar_stock === true);
+    const previos = await revertirItems(client, anterior, `Corrección de ${anterior.po_number}`, compra.items);
     const t = totalesDe(compra);
 
     const { rows: act } = await client.query(
@@ -329,7 +390,7 @@ router.put("/:id", async (req, res) => {
        compra.invoice_number, compra.notes, anterior.id]
     );
     const orden = act[0];
-    const lineas = await aplicarItems(client, orden, compra, proveedor);
+    const lineas = await aplicarItems(client, orden, compra, proveedor, previos);
     const gasto = await guardarGasto(client, orden, compra.order_date, usuario);
     await client.query(
       "UPDATE purchase_orders SET items_json = $1, items_count = $2, expense_id = $3 WHERE id = $4",
@@ -352,6 +413,7 @@ router.post("/:id/cancel", async (req, res) => {
     if (orden.status === "cancelled") fallar(409, "La compra ya estaba anulada");
     if (await esCompraVieja(client, orden)) fallar(409, "Esta compra es del sistema anterior y no se puede anular");
 
+    frenarSiYaSeVendio(await unidadesYaVendidas(client, orden), req.body?.confirmar_stock === true);
     await revertirItems(client, orden, `Anulación de ${orden.po_number}`);
     await client.query("DELETE FROM expenses WHERE purchase_order_id = $1", [String(orden.id)]);
     await client.query(
@@ -397,6 +459,9 @@ router.get("/prices", async (req, res) => {
                                   ORDER BY i.purchase_date DESC, i.created_at DESC) AS orden
         FROM purchase_order_items i
         JOIN purchase_orders o ON o.id::text = i.purchase_order_id
+        -- A un proveedor archivado ya no se le compra: recomendarlo como el
+        -- mas barato no sirve de nada
+        JOIN suppliers s ON s.id::text = i.supplier_id AND s.is_active IS NOT FALSE
         WHERE o.status = 'received' ${filtro}
       )
       SELECT product_id, supplier_id,

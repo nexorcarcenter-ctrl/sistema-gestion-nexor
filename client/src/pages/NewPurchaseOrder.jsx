@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import POItemsEditor from "../components/POItemsEditor";
 import SupplierForm from "../components/SupplierForm";
+import StockVendidoDialog from "../components/StockVendidoDialog";
 import { fmtMoneda, TASAS_IVA } from "../components/purchaseFormat";
 import moment from "moment";
 
@@ -42,6 +43,7 @@ export default function NewPurchaseOrder() {
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
   const [nuevoProveedor, setNuevoProveedor] = useState(false);
+  const [faltantes, setFaltantes] = useState(null);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers", "activos"], queryFn: () => Supplier.filter({ is_active: true }, "name", 500) });
@@ -94,10 +96,14 @@ export default function NewPurchaseOrder() {
       }
       navigate(createPageUrl("PurchaseOrderDetail") + "?id=" + (orden?.id || editId), { replace: true });
     },
-    onError: (e) => setError(e.message),
+    onError: (e) => {
+      if (e.data?.codigo === "stock_insuficiente") return setFaltantes(e.data.faltantes);
+      setError(e.message);
+    },
   });
 
-  const enviar = () => {
+  const enviar = (confirmarStock = false) => {
+    setFaltantes(null);
     setError("");
     if (!form.supplier_id) return setError("Elegí el proveedor");
     if (!items.length) return setError("Agregá al menos un producto");
@@ -108,6 +114,7 @@ export default function NewPurchaseOrder() {
       exchange_rate: tc,
       tax_rate: Number(form.tax_rate) || 0,
       items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity, unit_cost: Number(i.unit_cost) || 0 })),
+      confirmar_stock: confirmarStock,
     });
   };
 
@@ -205,13 +212,18 @@ export default function NewPurchaseOrder() {
               <div className="flex justify-between text-lg font-bold border-t pt-3"><span>Total</span><span className="text-[#E8461E]">{fmtMoneda(total, form.currency)}</span></div>
               {form.currency === "USD" && <p className="text-xs text-slate-500 text-right">= {fmtMoneda(total * tc, "UYU")} en pesos</p>}
               {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
-              <Button className="w-full bg-[#E8461E] hover:bg-[#c73a15]" onClick={enviar} disabled={guardar.isPending || bloqueada}>
+              <Button className="w-full bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => enviar(false)} disabled={guardar.isPending || bloqueada}>
                 {guardar.isPending ? "Guardando…" : editId ? "Guardar cambios" : "Registrar compra"}
               </Button>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <StockVendidoDialog
+        faltantes={faltantes} accion="guardar la corrección"
+        onConfirmar={() => enviar(true)} onCancelar={() => setFaltantes(null)} procesando={guardar.isPending}
+      />
 
       <Dialog open={nuevoProveedor} onOpenChange={setNuevoProveedor}>
         <DialogContent className="sm:max-w-lg">

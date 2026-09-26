@@ -20,7 +20,12 @@ export async function apiFetch(url, options = {}) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || res.statusText);
+    // Se conserva la respuesta entera: algunos errores traen detalle para
+    // mostrar (por ejemplo, qué productos no tienen stock suficiente)
+    const e = new Error(err.error || res.statusText);
+    e.status = res.status;
+    e.data = err;
+    throw e;
   }
   return res.json();
 }

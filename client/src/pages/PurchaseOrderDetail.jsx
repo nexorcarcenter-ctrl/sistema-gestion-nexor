@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fmtMoneda, fmtFecha, ESTADOS_COMPRA } from "../components/purchaseFormat";
+import StockVendidoDialog from "../components/StockVendidoDialog";
 
 function Fila({ etiqueta, children }) {
   return <div className="flex justify-between gap-3 text-sm"><span className="text-slate-500">{etiqueta}</span><span className="text-right">{children}</span></div>;
@@ -19,6 +20,7 @@ export default function PurchaseOrderDetail() {
   const orderId = new URLSearchParams(window.location.search).get("id");
   const [confirmarAnular, setConfirmarAnular] = useState(false);
   const [error, setError] = useState("");
+  const [faltantes, setFaltantes] = useState(null);
 
   const { data: order, isLoading } = useQuery({ queryKey: ["purchase-order", orderId], queryFn: () => PurchaseOrder.detalle(orderId), enabled: !!orderId });
 
@@ -28,9 +30,14 @@ export default function PurchaseOrderDetail() {
     }
   };
   const anular = useMutation({
-    mutationFn: () => PurchaseOrder.anular(orderId),
-    onSuccess: () => { setConfirmarAnular(false); refrescar(); },
-    onError: (e) => { setConfirmarAnular(false); setError(e.message); },
+    mutationFn: (confirmarStock = false) => PurchaseOrder.anular(orderId, { confirmarStock }),
+    onSuccess: () => { setConfirmarAnular(false); setFaltantes(null); refrescar(); },
+    onError: (e) => {
+      setConfirmarAnular(false);
+      if (e.data?.codigo === "stock_insuficiente") return setFaltantes(e.data.faltantes);
+      setFaltantes(null);
+      setError(e.message);
+    },
   });
   const borrar = useMutation({
     mutationFn: () => PurchaseOrder.borrarPedido(orderId),
@@ -142,13 +149,18 @@ export default function PurchaseOrderDetail() {
         </div>
       </div>
 
+      <StockVendidoDialog
+        faltantes={faltantes} accion="anular"
+        onConfirmar={() => anular.mutate(true)} onCancelar={() => setFaltantes(null)} procesando={anular.isPending}
+      />
+
       <Dialog open={confirmarAnular} onOpenChange={setConfirmarAnular}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>¿Anular {order.po_number}?</DialogTitle></DialogHeader>
           <p className="text-sm text-slate-600">Se va a descontar del stock lo que sumó esta compra, se repone el costo anterior de los productos y se borra su gasto. La compra queda en el listado como anulada.</p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setConfirmarAnular(false)}>Cancelar</Button>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={() => anular.mutate()} disabled={anular.isPending}>{anular.isPending ? "Anulando…" : "Anular compra"}</Button>
+            <Button className="bg-red-600 hover:bg-red-700" onClick={() => anular.mutate(false)} disabled={anular.isPending}>{anular.isPending ? "Anulando…" : "Anular compra"}</Button>
           </div>
         </DialogContent>
       </Dialog>

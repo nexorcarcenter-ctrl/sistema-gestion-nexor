@@ -3,7 +3,7 @@ import { Search, Package, Trash2, TrendingDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fmtMoneda } from "./purchaseFormat";
+import { fmtMoneda, fmtFecha } from "./purchaseFormat";
 
 /**
  * Líneas de una compra. Además de cargar cantidad y costo, avisa si otro
@@ -86,7 +86,7 @@ export default function POItemsEditor({ products, items, onItemsChange, currency
                         <p className="text-xs text-slate-500">{item.sku}</p>
                         {esteProveedor && (
                           <p className="text-[11px] text-slate-400 mt-0.5">
-                            Última vez a este proveedor: {fmtMoneda(esteProveedor.ultimo_costo, esteProveedor.ultima_moneda)}
+                            Última vez a este proveedor: {fmtMoneda(esteProveedor.ultimo_costo, esteProveedor.ultima_moneda)} ({fmtFecha(esteProveedor.ultima_fecha)})
                           </p>
                         )}
                         {masBarato && (
@@ -94,6 +94,7 @@ export default function POItemsEditor({ products, items, onItemsChange, currency
                             <TrendingDown className="h-3 w-3" />
                             {masBarato.supplier_name} lo vendió a {fmtMoneda(masBarato.ultimo_costo, masBarato.ultima_moneda)}
                             {masBarato.ultima_moneda !== "UYU" && ` (${fmtMoneda(masBarato.ultimo_costo_uyu, "UYU")})`}
+                            {` el ${fmtFecha(masBarato.ultima_fecha)}`}
                           </p>
                         )}
                       </td>

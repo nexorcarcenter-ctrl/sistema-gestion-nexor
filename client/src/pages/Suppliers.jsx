@@ -44,7 +44,7 @@ export default function Suppliers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Proveedores</h1>
-        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => { setEditSupplier(null); setShowForm(true); }}><Plus className="h-4 w-4 mr-2" />Nuevo proveedor</Button>
+        <Button className="bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => { saveMutation.reset(); setEditSupplier(null); setShowForm(true); }}><Plus className="h-4 w-4 mr-2" />Nuevo proveedor</Button>
       </div>
       <div className="relative max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder="Buscar por nombre, contacto o RUT" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -60,7 +60,7 @@ export default function Suppliers() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setEditSupplier(supplier); setShowForm(true); }}><Edit2 className="h-4 w-4 mr-2" />Editar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { saveMutation.reset(); setEditSupplier(supplier); setShowForm(true); }}><Edit2 className="h-4 w-4 mr-2" />Editar</DropdownMenuItem>
                       <DropdownMenuItem className="text-red-600" onClick={() => setAArchivar(supplier)}><Archive className="h-4 w-4 mr-2" />Archivar</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -141,7 +141,7 @@ function FichaProveedor({ proveedor, onClose }) {
               data?.productos?.length ? (
                 <table className="w-full text-sm">
                   <thead className="text-xs text-slate-500 uppercase border-b">
-                    <tr><th className="text-left py-2">Producto</th><th className="text-center py-2">Unidades</th><th className="text-right py-2">Último precio</th><th className="text-right py-2">Última compra</th></tr>
+                    <tr><th className="text-left py-2">Producto</th><th className="text-center py-2">Unidades</th><th className="text-right py-2">Precio unit. (sin IVA)</th><th className="text-right py-2">Última compra</th></tr>
                   </thead>
                   <tbody>
                     {data.productos.map((p) => (

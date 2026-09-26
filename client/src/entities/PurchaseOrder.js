@@ -18,8 +18,9 @@ export class PurchaseOrder extends BaseEntity {
     return apiFetch(`/api/purchases/${id}`, { method: "PUT", body: JSON.stringify(datos) });
   }
 
-  static async anular(id) {
-    return apiFetch(`/api/purchases/${id}/cancel`, { method: "POST" });
+  // confirmarStock: seguir aunque parte de lo comprado ya se haya vendido
+  static async anular(id, { confirmarStock = false } = {}) {
+    return apiFetch(`/api/purchases/${id}/cancel`, { method: "POST", body: JSON.stringify({ confirmar_stock: confirmarStock }) });
   }
 
   // Solo pedidos del sistema anterior que nunca se recibieron

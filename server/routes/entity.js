@@ -65,6 +65,37 @@ router.use("/:entity/:id?", async (req, res, next) => {
   next();
 });
 
+// Un proveedor repetido parte en dos su historial de compras y la
+// comparacion de precios. Se compara contra los activos por nombre (sin
+// importar mayusculas ni espacios) y por RUT.
+router.use("/suppliers/:id?", async (req, res, next) => {
+  if (!["POST", "PUT"].includes(req.method) || req.params.id === "bulk") return next();
+  const nombre = (req.body?.name || "").trim();
+  const rut = (req.body?.tax_id || "").replace(/\D/g, "");
+  if (!nombre && !rut) return next();
+  try {
+    const { rows } = await pool.query(`
+      SELECT name, tax_id FROM suppliers
+      WHERE is_active IS NOT FALSE
+        AND ($1::text IS NULL OR id::text <> $1)
+        AND ((LOWER(TRIM(name)) = LOWER($2) AND $2 <> '')
+          OR ($3 <> '' AND regexp_replace(COALESCE(tax_id, ''), '\\D', '', 'g') = $3))
+      LIMIT 1
+    `, [req.params.id || null, nombre, rut]);
+    if (rows[0]) {
+      const porRut = rut && (rows[0].tax_id || "").replace(/\D/g, "") === rut;
+      return res.status(409).json({
+        error: porRut
+          ? `Ya existe un proveedor con ese RUT: ${rows[0].name}`
+          : `Ya existe un proveedor llamado ${rows[0].name}`,
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+  next();
+});
+
 // Whitelist de columnas válidas por tabla (previene SQL injection)
 const VALID_COLUMNS = new Set([
   // Compra directa
