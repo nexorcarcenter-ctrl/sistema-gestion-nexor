@@ -44,6 +44,24 @@ app.use("/api/stock", authMiddleware, require("./routes/stock"));
 // Sequence routes (protected)
 app.use("/api/sequence", authMiddleware, require("./routes/sequence"));
 
+// Cotizacion del dolar (protected): la ultima consultada en internet
+const cotizacion = require("./exchangeRate");
+app.get("/api/exchange-rate", authMiddleware, async (req, res) => {
+  try {
+    res.json(await cotizacion.ultima());
+  } catch (err) {
+    res.status(500).json({ error: "No se pudo leer la cotización" });
+  }
+});
+app.post("/api/exchange-rate/refresh", authMiddleware, async (req, res) => {
+  try {
+    await cotizacion.actualizar();
+    res.json(await cotizacion.ultima());
+  } catch (err) {
+    res.status(500).json({ error: "No se pudo actualizar la cotización" });
+  }
+});
+
 // Compra directa (protected): registra compra, stock, costo y gasto juntos
 app.use("/api/purchases", authMiddleware, require("./routes/purchases"));
 
@@ -174,4 +192,5 @@ app.listen(PORT, async () => {
   await runMigrations();
   await seedAdmin();
   await backfillSalePrices();
+  cotizacion.iniciar();
 });

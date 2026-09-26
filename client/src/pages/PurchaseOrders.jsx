@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { PurchaseOrder } from "@/entities/PurchaseOrder";
-import { Search, Plus, Truck, TrendingDown } from "lucide-react";
+import { Search, Plus, Truck, TrendingDown, Wallet, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import PORow from "../components/PORow";
 import PeriodPicker from "../components/PeriodPicker";
 import { rangoDelPeriodo } from "@/entities/Report";
 import { fmtMoneda, fmtFecha } from "../components/purchaseFormat";
+import PagoCompraDialog from "../components/PagoCompraDialog";
+import { useCotizacion } from "../components/CotizacionDelDia";
 import moment from "moment";
 
 const Pestana = ({ activa, onClick, children }) => (
@@ -35,9 +37,12 @@ export default function PurchaseOrders() {
       </div>
       <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
         <Pestana activa={vista === "compras"} onClick={() => setVista("compras")}>Compras</Pestana>
+        <Pestana activa={vista === "deudas"} onClick={() => setVista("deudas")}>A pagar</Pestana>
         <Pestana activa={vista === "precios"} onClick={() => setVista("precios")}>Comparar precios</Pestana>
       </div>
-      {vista === "compras" ? <ListaCompras /> : <ComparadorPrecios />}
+      {vista === "compras" && <ListaCompras />}
+      {vista === "deudas" && <Deudas />}
+      {vista === "precios" && <ComparadorPrecios />}
     </div>
   );
 }
@@ -94,6 +99,71 @@ function ListaCompras() {
           <div className="text-center py-12 bg-white rounded-lg"><Truck className="h-12 w-12 text-slate-300 mx-auto mb-3" /><p className="text-slate-500">No hay compras en este período</p></div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Compras a crédito con saldo, de la más urgente a la menos. Las deudas en
+// dólares se pasan a pesos con la cotización de hoy: es lo que costaría
+// pagarlas ahora.
+function Deudas() {
+  const queryClient = useQueryClient();
+  const [pagando, setPagando] = useState(null);
+  const { data: deudas = [], isLoading } = useQuery({ queryKey: ["purchase-debts"], queryFn: () => PurchaseOrder.deudas() });
+  const { data: cotizacion } = useCotizacion();
+  const tcHoy = cotizacion?.venta || 0;
+  const enPesos = (d) => d.currency === "USD" ? d.saldo * (tcHoy || d.exchange_rate) : d.saldo;
+
+  const vencidas = deudas.filter((d) => d.dias_para_vencer != null && d.dias_para_vencer < 0);
+  const proximas = deudas.filter((d) => d.dias_para_vencer != null && d.dias_para_vencer >= 0 && d.dias_para_vencer <= 7);
+  const suma = (l) => l.reduce((s, d) => s + enPesos(d), 0);
+  const hayDolares = deudas.some((d) => d.currency === "USD");
+
+  const refrescar = () => {
+    for (const k of ["purchase-debts", "purchase-orders", "purchase-order", "expenses", "supplier-history"]) queryClient.invalidateQueries({ queryKey: [k] });
+  };
+
+  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" /></div>;
+
+  const vence = (d) => {
+    if (d.dias_para_vencer == null) return { texto: "Sin vencimiento", clase: "text-slate-500" };
+    if (d.dias_para_vencer < 0) return { texto: `Venció hace ${-d.dias_para_vencer} día(s)`, clase: "text-red-600 font-semibold" };
+    if (d.dias_para_vencer === 0) return { texto: "Vence hoy", clase: "text-red-600 font-semibold" };
+    if (d.dias_para_vencer <= 7) return { texto: `Vence en ${d.dias_para_vencer} día(s)`, clase: "text-amber-600 font-medium" };
+    return { texto: `Vence el ${fmtFecha(d.due_date)}`, clase: "text-slate-500" };
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow-sm p-4"><p className="text-xs text-slate-500 uppercase">Deuda total</p><p className="text-2xl font-bold text-slate-900">{fmtMoneda(Math.round(suma(deudas)), "UYU")}</p><p className="text-xs text-slate-400">{deudas.length} compra(s)</p></div>
+        <div className="bg-white rounded-lg shadow-sm p-4"><p className="text-xs text-slate-500 uppercase">Vencido</p><p className={`text-2xl font-bold ${vencidas.length ? "text-red-600" : "text-slate-900"}`}>{fmtMoneda(Math.round(suma(vencidas)), "UYU")}</p><p className="text-xs text-slate-400">{vencidas.length} compra(s)</p></div>
+        <div className="bg-white rounded-lg shadow-sm p-4"><p className="text-xs text-slate-500 uppercase">Vence en 7 días</p><p className={`text-2xl font-bold ${proximas.length ? "text-amber-600" : "text-slate-900"}`}>{fmtMoneda(Math.round(suma(proximas)), "UYU")}</p><p className="text-xs text-slate-400">{proximas.length} compra(s)</p></div>
+      </div>
+      {hayDolares && <p className="text-xs text-slate-500">Las deudas en dólares se muestran en pesos con la cotización de hoy{tcHoy ? ` ($${tcHoy.toLocaleString("es-UY")})` : ""}. El gasto se calcula con la del día en que se pague.</p>}
+      {deudas.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg"><CheckCircle2 className="h-12 w-12 text-emerald-300 mx-auto mb-3" /><p className="text-slate-500">No hay compras a crédito pendientes de pago</p></div>
+      ) : (
+        <div className="space-y-2">
+          {deudas.map((d) => {
+            const v = vence(d);
+            return (
+              <div key={d.id} className="flex items-center gap-4 p-3 bg-white rounded-lg border border-slate-100">
+                <Link to={createPageUrl("PurchaseOrderDetail") + "?id=" + d.id} className="flex-1 min-w-0 hover:opacity-80">
+                  <p className="text-sm font-semibold text-slate-900">{d.supplier_name} <span className="font-mono font-normal text-slate-500 text-xs">{d.po_number}</span></p>
+                  <p className="text-xs"><span className={v.clase}>{v.texto}</span><span className="text-slate-400"> · compra del {fmtFecha(d.order_date)} a {d.credit_days} días{d.paid_amount > 0 ? ` · pagado ${fmtMoneda(d.paid_amount, d.currency)}` : ""}</span></p>
+                </Link>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-red-600">{fmtMoneda(d.saldo, d.currency)}</p>
+                  {d.currency === "USD" && <p className="text-[11px] text-slate-400">≈ {fmtMoneda(Math.round(enPesos(d)), "UYU")}</p>}
+                </div>
+                <Button size="sm" variant="outline" onClick={() => setPagando(d)}><Wallet className="h-3.5 w-3.5 mr-1" />Pagar</Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <PagoCompraDialog compra={pagando} onClose={() => setPagando(null)} onPagado={refrescar} />
     </div>
   );
 }

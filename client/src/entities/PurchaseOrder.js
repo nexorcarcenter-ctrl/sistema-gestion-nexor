@@ -28,6 +28,18 @@ export class PurchaseOrder extends BaseEntity {
     return apiFetch(`/api/purchases/${id}`, { method: "DELETE" });
   }
 
+  static async pagar(id, datos) {
+    return apiFetch(`/api/purchases/${id}/payments`, { method: "POST", body: JSON.stringify(datos) });
+  }
+
+  static async borrarPago(id, pagoId) {
+    return apiFetch(`/api/purchases/${id}/payments/${pagoId}`, { method: "DELETE" });
+  }
+
+  static async deudas() {
+    return apiFetch("/api/purchases/debts");
+  }
+
   static async precios(productId) {
     const q = productId ? `?product_id=${encodeURIComponent(productId)}` : "";
     return apiFetch(`/api/purchases/prices${q}`);

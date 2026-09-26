@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Truck, ChevronRight } from "lucide-react";
-import { fmtMoneda, fmtFecha, ESTADOS_COMPRA } from "./purchaseFormat";
+import { fmtMoneda, fmtFecha, ESTADOS_COMPRA, estadoPago } from "./purchaseFormat";
 
 export default function PORow({ order }) {
   const estado = ESTADOS_COMPRA[order.status] || { etiqueta: order.status, clase: "bg-slate-100 text-slate-600" };
   const moneda = order.currency || "UYU";
   const anulada = order.status === "cancelled";
+  const pago = estadoPago(order);
   return (
     <Link
       to={createPageUrl("PurchaseOrderDetail") + "?id=" + order.id}
@@ -19,9 +20,10 @@ export default function PORow({ order }) {
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-bold text-slate-900 font-mono">{order.po_number}</p>
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${estado.clase}`}>{estado.etiqueta}</span>
+          {pago && order.payment_type === "credito" && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${pago.clase}`}>{pago.etiqueta}</span>}
         </div>
         <p className="text-xs text-slate-500 mt-0.5 truncate">
-          {[order.supplier_name, fmtFecha(order.order_date || order.created_at), order.payment_method_name].filter(Boolean).join(" · ")}
+          {[order.supplier_name, fmtFecha(order.order_date || order.created_at), order.payment_type === "credito" ? `crédito ${order.credit_days} días` : order.payment_method_name].filter(Boolean).join(" · ")}
         </p>
       </div>
       <div className="text-right flex-shrink-0">

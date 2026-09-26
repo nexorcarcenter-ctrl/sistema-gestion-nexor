@@ -42,9 +42,9 @@ const PERMISOS = {
     gestionarUsuarios: false,
     // Compras y Proveedores estan a medio hacer: no se le muestran todavia
     verModulosEnConstruccion: false,
-    // Compra directa y proveedores: todavia en prueba, solo el admin
-    gestionarCompras: false,
-    archivar: ["products"],
+    // El gerente es quien registra compras, pagos y proveedores
+    gestionarCompras: true,
+    archivar: ["products", "suppliers"],
     eliminar: ["expenses"],
   },
   user: {

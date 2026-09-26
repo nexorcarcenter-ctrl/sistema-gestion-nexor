@@ -9,6 +9,10 @@ const permisos = require("../permissions");
  * ninguna: suma el stock, actualiza el costo de cada producto, anota el gasto
  * y actualiza los totales del proveedor. Por eso todo va en una transaccion y
  * nada de esto se escribe desde la API generica de entidades.
+ *
+ * El gasto sale de los pagos, no de la compra: cuenta cuando la plata sale.
+ * Una compra de contado tiene un unico pago el mismo dia; una a credito queda
+ * como deuda y cada pago que se le registra genera su gasto.
  */
 
 router.use((req, res, next) => {
@@ -36,6 +40,9 @@ function leerCompra(body) {
   if (moneda === "USD" && !(tc > 0)) errores.push("Poné el tipo de cambio");
   if (!TASAS_IVA.includes(iva)) errores.push("IVA inválido");
   if (!fecha) errores.push("Fecha inválida");
+  const tipoPago = body.payment_type === "credito" ? "credito" : "contado";
+  const dias = tipoPago === "credito" ? parseInt(body.credit_days, 10) : 0;
+  if (tipoPago === "credito" && !(dias >= 1 && dias <= 365)) errores.push("Elegí a cuántos días es el crédito");
 
   const items = (Array.isArray(body.items) ? body.items : []).map((i) => ({
     product_id: i.product_id,
@@ -56,7 +63,10 @@ function leerCompra(body) {
       currency: moneda,
       exchange_rate: moneda === "USD" ? tc : 1,
       tax_rate: iva,
-      payment_method_id: body.payment_method_id || null,
+      payment_type: tipoPago,
+      credit_days: dias,
+      // Al credito la forma de pago se elige en cada pago, no en la compra
+      payment_method_id: tipoPago === "contado" ? (body.payment_method_id || null) : null,
       invoice_number: (body.invoice_number || "").trim() || null,
       notes: (body.notes || "").trim() || null,
       items,
@@ -206,32 +216,72 @@ function frenarSiYaSeVendio(faltantes, confirmado) {
   throw err;
 }
 
-// Crea o actualiza el gasto que representa la compra
-async function guardarGasto(client, orden, fecha, usuario) {
-  const descripcion = `Compra ${orden.po_number} a ${orden.supplier_name}`;
-  const valores = [
-    fecha, CATEGORIA_GASTO, descripcion, orden.total, orden.currency, orden.exchange_rate,
-    orden.total_uyu, orden.payment_method_id, orden.payment_method_name, orden.supplier_name,
-    orden.invoice_number ? `Factura ${orden.invoice_number}` : null,
-  ];
-  if (orden.expense_id) {
-    const { rowCount } = await client.query(
-      `UPDATE expenses SET expense_date=$1, category_name=$2, description=$3, amount=$4, currency=$5,
-         exchange_rate=$6, amount_uyu=$7, payment_method_id=$8, payment_method_name=$9, supplier_name=$10,
-         notes=$11, updated_at=NOW()
-       WHERE id = $12`,
-      [...valores, orden.expense_id]
-    );
-    if (rowCount) return orden.expense_id;
-  }
-  const { rows } = await client.query(
+// Registra un pago de la compra junto con su gasto: es el momento en que la
+// plata sale de la empresa, asi que es cuando cuenta en los reportes. En
+// dolares se pasa a pesos con la cotizacion del dia del pago.
+async function registrarPago(client, orden, pago, usuario) {
+  const enPesos = redondear(pago.amount * pago.exchange_rate);
+  const { rows: [p] } = await client.query(
+    `INSERT INTO purchase_payments (purchase_order_id, payment_date, amount, currency, exchange_rate, amount_uyu,
+       payment_method_id, payment_method_name, notes, created_by, created_by_name)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+    [String(orden.id), pago.payment_date, pago.amount, orden.currency || "UYU", pago.exchange_rate, enPesos,
+     pago.metodo?.id || null, pago.metodo?.name || null, pago.notes || null, usuario.id, usuario.nombre]
+  );
+  const descripcion = orden.payment_type === "credito"
+    ? `Pago de ${orden.po_number} a ${orden.supplier_name}`
+    : `Compra ${orden.po_number} a ${orden.supplier_name}`;
+  const notas = [orden.invoice_number && `Factura ${orden.invoice_number}`, pago.notes].filter(Boolean).join(" · ") || null;
+  const { rows: [g] } = await client.query(
     `INSERT INTO expenses (expense_date, category_name, description, amount, currency, exchange_rate,
        amount_uyu, payment_method_id, payment_method_name, supplier_name, notes,
-       expense_type, purchase_order_id, is_fixed, created_by, created_by_name)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'compra',$12,false,$13,$14) RETURNING id`,
-    [...valores, orden.id, usuario.id, usuario.nombre]
+       expense_type, purchase_order_id, purchase_payment_id, is_fixed, created_by, created_by_name)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'compra',$12,$13,false,$14,$15) RETURNING id`,
+    [pago.payment_date, CATEGORIA_GASTO, descripcion, pago.amount, orden.currency || "UYU", pago.exchange_rate,
+     enPesos, pago.metodo?.id || null, pago.metodo?.name || null, orden.supplier_name, notas,
+     String(orden.id), String(p.id), usuario.id, usuario.nombre]
   );
-  return rows[0].id;
+  await client.query("UPDATE purchase_payments SET expense_id = $1 WHERE id = $2", [String(g.id), p.id]);
+}
+
+// Borra pagos (todos los de la compra, o uno) junto con sus gastos
+async function borrarPagos(client, ordenId, pagoId = null) {
+  const params = pagoId ? [String(ordenId), String(pagoId)] : [String(ordenId)];
+  const filtro = pagoId ? "AND id::text = $2" : "";
+  const { rows } = await client.query(
+    `DELETE FROM purchase_payments WHERE purchase_order_id = $1 ${filtro} RETURNING expense_id`,
+    params
+  );
+  const gastos = rows.map((r) => r.expense_id).filter(Boolean);
+  if (gastos.length) await client.query("DELETE FROM expenses WHERE id::text = ANY($1)", [gastos]);
+  return rows.length;
+}
+
+// Cuanto se pago y en que estado queda: pagada, parcial o pendiente
+async function actualizarEstadoPago(client, ordenId) {
+  const { rows: [o] } = await client.query("SELECT total FROM purchase_orders WHERE id = $1", [ordenId]);
+  const { rows: [r] } = await client.query(
+    `SELECT COALESCE(SUM(amount), 0) AS pagado,
+            (SELECT expense_id FROM purchase_payments WHERE purchase_order_id = $1
+             ORDER BY payment_date, created_at LIMIT 1) AS primer_gasto
+     FROM purchase_payments WHERE purchase_order_id = $1`,
+    [String(ordenId)]
+  );
+  const pagado = redondear(r.pagado);
+  const total = redondear(o.total);
+  const estado = pagado >= total - 0.009 ? "paid" : pagado > 0 ? "partial" : "pending";
+  await client.query(
+    "UPDATE purchase_orders SET paid_amount = $1, payment_status = $2, expense_id = $3, updated_at = NOW() WHERE id = $4",
+    [pagado, estado, r.primer_gasto, ordenId]
+  );
+}
+
+async function pagosDe(client, ordenId) {
+  const { rows } = await client.query(
+    "SELECT * FROM purchase_payments WHERE purchase_order_id = $1 ORDER BY payment_date, created_at",
+    [String(ordenId)]
+  );
+  return rows;
 }
 
 // Totales del proveedor, recalculados desde las compras en lugar de sumar y
@@ -312,7 +362,11 @@ async function ordenCompleta(id) {
     "SELECT * FROM purchase_order_items WHERE purchase_order_id = $1 ORDER BY created_at, product_name",
     [id]
   );
-  return { ...rows[0], items };
+  const { rows: pagos } = await pool.query(
+    "SELECT * FROM purchase_payments WHERE purchase_order_id = $1 ORDER BY payment_date, created_at",
+    [id]
+  );
+  return { ...rows[0], items, pagos };
 }
 
 // La compra ya quedo guardada: si falla solo la relectura, se avisa igual
@@ -339,20 +393,24 @@ router.post("/", async (req, res) => {
       `INSERT INTO purchase_orders (po_number, order_date, received_date, supplier_id, supplier_name,
          currency, exchange_rate, tax_rate, subtotal, tax_amount, total, total_uyu,
          payment_method_id, payment_method_name, invoice_number, notes, status, payment_status,
-         created_by, created_by_name)
-       VALUES ($1,$2,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'received','paid',$16,$17)
+         payment_type, credit_days, due_date, paid_amount, created_by, created_by_name)
+       VALUES ($1,$2,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'received','pending',
+         $16, $17::int, CASE WHEN $16 = 'credito' THEN $2::date + $17::int END, 0, $18, $19)
        RETURNING *`,
       [numero, compra.order_date, proveedor.id, proveedor.name, compra.currency, compra.exchange_rate,
        compra.tax_rate, t.subtotal, t.iva, t.total, t.total_uyu, metodo?.id || null, metodo?.name || null,
-       compra.invoice_number, compra.notes, usuario.id, usuario.nombre]
+       compra.invoice_number, compra.notes, compra.payment_type, compra.credit_days, usuario.id, usuario.nombre]
     );
     const orden = rows[0];
     const lineas = await aplicarItems(client, orden, compra, proveedor);
-    const gasto = await guardarGasto(client, orden, compra.order_date, usuario);
     await client.query(
-      "UPDATE purchase_orders SET items_json = $1, items_count = $2, expense_id = $3 WHERE id = $4",
-      [JSON.stringify(lineas), lineas.reduce((s, l) => s + l.quantity, 0), gasto, orden.id]
+      "UPDATE purchase_orders SET items_json = $1, items_count = $2 WHERE id = $3",
+      [JSON.stringify(lineas), lineas.reduce((s, l) => s + l.quantity, 0), orden.id]
     );
+    if (compra.payment_type === "contado") {
+      await registrarPago(client, orden, { amount: t.total, exchange_rate: compra.exchange_rate, payment_date: compra.order_date, metodo }, usuario);
+    }
+    await actualizarEstadoPago(client, orden.id);
     await recalcularProveedor(client, proveedor.id);
     return orden.id;
   });
@@ -375,27 +433,46 @@ router.put("/:id", async (req, res) => {
     if (await esCompraVieja(client, anterior)) fallar(409, "Esta compra es del sistema anterior y no se puede editar");
 
     const { proveedor, metodo } = await cargarReferencias(client, compra);
+    const t = totalesDe(compra);
+
+    // Los pagos de una compra a credito son plata que ya salio: la edicion
+    // no puede dejarlos colgados ni por encima del nuevo total
+    const pagosPrevios = await pagosDe(client, anterior.id);
+    const eraCredito = anterior.payment_type === "credito";
+    if (eraCredito && pagosPrevios.length) {
+      const pagado = redondear(pagosPrevios.reduce((s, p) => s + Number(p.amount), 0));
+      if (compra.payment_type === "contado") fallar(409, "Esta compra ya tiene pagos registrados: registrá el pago que falta en lugar de pasarla a contado");
+      if (compra.currency !== (anterior.currency || "UYU")) fallar(409, "No se puede cambiar la moneda de una compra que ya tiene pagos");
+      if (pagado > t.total + 0.009) fallar(409, `Ya se le pagó ${pagado}, más que el nuevo total (${t.total})`);
+    }
+
     frenarSiYaSeVendio(await unidadesYaVendidas(client, anterior, compra.items), req.body.confirmar_stock === true);
     const previos = await revertirItems(client, anterior, `Corrección de ${anterior.po_number}`, compra.items);
-    const t = totalesDe(compra);
 
     const { rows: act } = await client.query(
       `UPDATE purchase_orders SET order_date=$1, received_date=$1, supplier_id=$2, supplier_name=$3,
          currency=$4, exchange_rate=$5, tax_rate=$6, subtotal=$7, tax_amount=$8, total=$9, total_uyu=$10,
          payment_method_id=$11, payment_method_name=$12, invoice_number=$13, notes=$14,
-         status='received', payment_status='paid', updated_at=NOW()
-       WHERE id = $15 RETURNING *`,
+         status='received', payment_type=$15, credit_days=$16::int,
+         due_date = CASE WHEN $15 = 'credito' THEN $1::date + $16::int END, updated_at=NOW()
+       WHERE id = $17 RETURNING *`,
       [compra.order_date, proveedor.id, proveedor.name, compra.currency, compra.exchange_rate, compra.tax_rate,
        t.subtotal, t.iva, t.total, t.total_uyu, metodo?.id || null, metodo?.name || null,
-       compra.invoice_number, compra.notes, anterior.id]
+       compra.invoice_number, compra.notes, compra.payment_type, compra.credit_days, anterior.id]
     );
     const orden = act[0];
     const lineas = await aplicarItems(client, orden, compra, proveedor, previos);
-    const gasto = await guardarGasto(client, orden, compra.order_date, usuario);
     await client.query(
-      "UPDATE purchase_orders SET items_json = $1, items_count = $2, expense_id = $3 WHERE id = $4",
-      [JSON.stringify(lineas), lineas.reduce((s, l) => s + l.quantity, 0), gasto, orden.id]
+      "UPDATE purchase_orders SET items_json = $1, items_count = $2 WHERE id = $3",
+      [JSON.stringify(lineas), lineas.reduce((s, l) => s + l.quantity, 0), orden.id]
     );
+    // De contado: su unico pago se rehace con los datos nuevos. Al pasar de
+    // contado a credito ese pago desaparece y la compra queda como deuda.
+    if (compra.payment_type === "contado" || !eraCredito) await borrarPagos(client, orden.id);
+    if (compra.payment_type === "contado") {
+      await registrarPago(client, orden, { amount: t.total, exchange_rate: compra.exchange_rate, payment_date: compra.order_date, metodo }, usuario);
+    }
+    await actualizarEstadoPago(client, orden.id);
     await recalcularProveedor(client, proveedor.id);
     if (String(anterior.supplier_id) !== String(proveedor.id)) await recalcularProveedor(client, anterior.supplier_id);
     return orden.id;
@@ -415,15 +492,85 @@ router.post("/:id/cancel", async (req, res) => {
 
     frenarSiYaSeVendio(await unidadesYaVendidas(client, orden), req.body?.confirmar_stock === true);
     await revertirItems(client, orden, `Anulación de ${orden.po_number}`);
+    await borrarPagos(client, orden.id);
+    // Por si quedo algun gasto de antes de que existieran los pagos
     await client.query("DELETE FROM expenses WHERE purchase_order_id = $1", [String(orden.id)]);
     await client.query(
-      "UPDATE purchase_orders SET status = 'cancelled', expense_id = NULL, updated_at = NOW() WHERE id = $1",
+      "UPDATE purchase_orders SET status = 'cancelled', expense_id = NULL, paid_amount = 0, updated_at = NOW() WHERE id = $1",
       [orden.id]
     );
     await recalcularProveedor(client, orden.supplier_id);
     return orden.id;
   });
   if (id) responderOrden(res, id);
+});
+
+// POST /api/purchases/:id/payments — registrar un pago de una compra a credito
+router.post("/:id/payments", async (req, res) => {
+  const usuario = await datosUsuario(req);
+  const monto = redondear(req.body.amount);
+  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(req.body.payment_date || "") ? req.body.payment_date : null;
+  if (!(monto > 0)) return res.status(400).json({ error: "Poné un monto mayor a cero" });
+  if (!fecha) return res.status(400).json({ error: "Fecha inválida" });
+
+  const id = await enTransaccion(res, async (client) => {
+    const { rows } = await client.query("SELECT * FROM purchase_orders WHERE id::text = $1 FOR UPDATE", [req.params.id]);
+    const orden = rows[0];
+    if (!orden) fallar(404, "Compra no encontrada");
+    if (orden.status !== "received") fallar(409, "Solo se pagan compras registradas");
+    if (orden.payment_type !== "credito") fallar(409, "Esta compra es de contado: ya quedó paga al registrarla");
+    const saldo = redondear(Number(orden.total) - Number(orden.paid_amount || 0));
+    if (monto > saldo + 0.009) fallar(400, `El pago supera lo que se debe (${saldo})`);
+    const tc = (orden.currency || "UYU") === "USD" ? Number(req.body.exchange_rate) : 1;
+    if (!(tc > 0)) fallar(400, "Poné el tipo de cambio del día del pago");
+    let metodo = null;
+    if (req.body.payment_method_id) {
+      const { rows: m } = await client.query("SELECT id, name FROM payment_methods WHERE id::text = $1", [String(req.body.payment_method_id)]);
+      metodo = m[0] || null;
+    }
+    await registrarPago(client, orden, { amount: monto, exchange_rate: tc, payment_date: fecha, metodo, notes: (req.body.notes || "").trim() }, usuario);
+    await actualizarEstadoPago(client, orden.id);
+    return orden.id;
+  });
+  if (id) responderOrden(res, id, 201);
+});
+
+// DELETE /api/purchases/:id/payments/:pagoId — deshacer un pago cargado por
+// error. Se borra tambien su gasto.
+router.delete("/:id/payments/:pagoId", async (req, res) => {
+  const id = await enTransaccion(res, async (client) => {
+    const { rows } = await client.query("SELECT * FROM purchase_orders WHERE id::text = $1 FOR UPDATE", [req.params.id]);
+    const orden = rows[0];
+    if (!orden) fallar(404, "Compra no encontrada");
+    if (orden.payment_type !== "credito") fallar(409, "El pago de una compra de contado se corrige editando la compra");
+    if (!(await borrarPagos(client, orden.id, req.params.pagoId))) fallar(404, "Pago no encontrado");
+    await actualizarEstadoPago(client, orden.id);
+    return orden.id;
+  });
+  if (id) responderOrden(res, id);
+});
+
+// GET /api/purchases/debts — compras a credito con saldo, por vencimiento
+router.get("/debts", async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT id, po_number, supplier_id, supplier_name, order_date, due_date, credit_days, currency,
+             exchange_rate, total, COALESCE(paid_amount, 0) AS paid_amount,
+             total - COALESCE(paid_amount, 0) AS saldo, payment_status, invoice_number,
+             (due_date - CURRENT_DATE) AS dias_para_vencer
+      FROM purchase_orders
+      WHERE status = 'received' AND payment_type = 'credito' AND payment_status <> 'paid'
+      ORDER BY due_date NULLS LAST, order_date
+    `);
+    const n = (v) => Number(v) || 0;
+    res.json(rows.map((r) => ({
+      ...r, total: n(r.total), paid_amount: n(r.paid_amount), saldo: n(r.saldo),
+      exchange_rate: n(r.exchange_rate), dias_para_vencer: r.dias_para_vencer == null ? null : n(r.dias_para_vencer),
+    })));
+  } catch (err) {
+    console.error("Purchases debts error:", err);
+    res.status(500).json({ error: "Error al cargar las deudas" });
+  }
 });
 
 // DELETE /api/purchases/:id — solo para borradores del sistema anterior, que
@@ -512,7 +659,8 @@ router.get("/supplier/:id", async (req, res) => {
   try {
     const id = String(req.params.id);
     const { rows: compras } = await pool.query(`
-      SELECT id, po_number, order_date, status, currency, total, total_uyu, payment_method_name, items_count, invoice_number
+      SELECT id, po_number, order_date, status, currency, total, total_uyu, payment_method_name, items_count, invoice_number,
+             payment_type, payment_status, due_date, total - COALESCE(paid_amount, 0) AS saldo
       FROM purchase_orders WHERE supplier_id = $1
       ORDER BY order_date DESC NULLS LAST, created_at DESC
     `, [id]);
@@ -534,7 +682,7 @@ router.get("/supplier/:id", async (req, res) => {
     `, [id]);
     const n = (v) => Number(v) || 0;
     res.json({
-      compras: compras.map((c) => ({ ...c, total: n(c.total), total_uyu: n(c.total_uyu) })),
+      compras: compras.map((c) => ({ ...c, total: n(c.total), total_uyu: n(c.total_uyu), saldo: n(c.saldo) })),
       productos: productos.map((p) => ({
         ...p, unidades: n(p.unidades), compras: n(p.compras),
         ultimo_costo: n(p.ultimo_costo), ultimo_costo_uyu: n(p.ultimo_costo_uyu),

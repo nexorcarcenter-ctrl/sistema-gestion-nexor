@@ -16,7 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import POItemsEditor from "../components/POItemsEditor";
 import SupplierForm from "../components/SupplierForm";
 import StockVendidoDialog from "../components/StockVendidoDialog";
-import { fmtMoneda, TASAS_IVA } from "../components/purchaseFormat";
+import { fmtMoneda, fmtFecha, TASAS_IVA, PLAZOS_CREDITO, diasDeCondicion } from "../components/purchaseFormat";
+import CotizacionDelDia, { useCotizacion } from "../components/CotizacionDelDia";
 import moment from "moment";
 
 const selectClase = "w-full h-10 rounded-md border border-slate-200 bg-white px-2 text-sm";
@@ -37,9 +38,13 @@ export default function NewPurchaseOrder() {
     currency: "UYU",
     exchange_rate: String(getDefaultExchangeRate()),
     tax_rate: 0,
+    payment_type: "contado",
+    credit_days: 30,
     payment_method_id: "",
     notes: "",
   });
+  // Si se escribió el tipo de cambio a mano, la cotización automática ya no lo pisa
+  const [tcManual, setTcManual] = useState(false);
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
   const [nuevoProveedor, setNuevoProveedor] = useState(false);
@@ -51,6 +56,22 @@ export default function NewPurchaseOrder() {
   const { data: metodos = [] } = useQuery({ queryKey: ["payment-methods"], queryFn: () => PaymentMethod.list("name", 50) });
   const { data: precios = [] } = useQuery({ queryKey: ["purchase-prices"], queryFn: () => PurchaseOrder.precios() });
   const { data: original } = useQuery({ queryKey: ["purchase-order", editId], queryFn: () => PurchaseOrder.detalle(editId), enabled: !!editId });
+  const { data: cotizacion } = useCotizacion();
+
+  useEffect(() => {
+    if (cotizacion?.venta && !editId && !tcManual) setForm((f) => ({ ...f, exchange_rate: String(cotizacion.venta) }));
+  }, [cotizacion?.venta, editId, tcManual]);
+
+  // Al elegir el proveedor se propone su condición de pago habitual
+  const elegirProveedor = (id) => {
+    const prov = suppliers.find((s) => String(s.id) === id);
+    const dias = diasDeCondicion(prov?.payment_terms);
+    setForm((f) => ({
+      ...f,
+      supplier_id: id,
+      ...(editId ? {} : { payment_type: dias > 0 ? "credito" : "contado", credit_days: dias > 0 ? dias : f.credit_days }),
+    }));
+  };
 
   // Al editar, se carga la compra una sola vez; después manda el formulario
   useEffect(() => {
@@ -62,6 +83,8 @@ export default function NewPurchaseOrder() {
       currency: original.currency || "UYU",
       exchange_rate: String(Number(original.exchange_rate) > 1 ? original.exchange_rate : getDefaultExchangeRate()),
       tax_rate: Number(original.tax_rate) || 0,
+      payment_type: original.payment_type === "credito" ? "credito" : "contado",
+      credit_days: Number(original.credit_days) || 30,
       payment_method_id: original.payment_method_id || "",
       notes: original.notes || "",
     });
@@ -83,7 +106,8 @@ export default function NewPurchaseOrder() {
     mutationFn: (datos) => Supplier.create({ ...datos, is_active: true }),
     onSuccess: (creado) => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      set("supplier_id", String(creado.id));
+      const dias = diasDeCondicion(creado.payment_terms);
+      setForm((f) => ({ ...f, supplier_id: String(creado.id), payment_type: dias > 0 ? "credito" : "contado", credit_days: dias > 0 ? dias : f.credit_days }));
       setNuevoProveedor(false);
     },
   });
@@ -91,7 +115,7 @@ export default function NewPurchaseOrder() {
   const guardar = useMutation({
     mutationFn: (datos) => (editId ? PurchaseOrder.editar(editId, datos) : PurchaseOrder.registrar(datos)),
     onSuccess: (orden) => {
-      for (const k of ["purchase-orders", "purchase-order", "purchase-prices", "products", "stock-movements", "expenses", "suppliers", "supplier-history"]) {
+      for (const k of ["purchase-orders", "purchase-order", "purchase-prices", "purchase-debts", "products", "stock-movements", "expenses", "suppliers", "supplier-history"]) {
         queryClient.invalidateQueries({ queryKey: [k] });
       }
       navigate(createPageUrl("PurchaseOrderDetail") + "?id=" + (orden?.id || editId), { replace: true });
@@ -113,6 +137,7 @@ export default function NewPurchaseOrder() {
       ...form,
       exchange_rate: tc,
       tax_rate: Number(form.tax_rate) || 0,
+      credit_days: form.payment_type === "credito" ? Number(form.credit_days) : 0,
       items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity, unit_cost: Number(i.unit_cost) || 0 })),
       confirmar_stock: confirmarStock,
     });
@@ -146,7 +171,7 @@ export default function NewPurchaseOrder() {
               <div className="sm:col-span-2">
                 <Label>Proveedor *</Label>
                 <div className="flex gap-2">
-                  <select value={form.supplier_id} onChange={(e) => set("supplier_id", e.target.value)} className={selectClase}>
+                  <select value={form.supplier_id} onChange={(e) => elegirProveedor(e.target.value)} className={selectClase}>
                     <option value="">Elegir proveedor…</option>
                     {suppliers.map((s) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
                   </select>
@@ -171,7 +196,8 @@ export default function NewPurchaseOrder() {
               {form.currency === "USD" ? (
                 <div>
                   <Label>Tipo de cambio</Label>
-                  <Input type="number" min="0" step="0.01" value={form.exchange_rate} onChange={(e) => set("exchange_rate", e.target.value)} />
+                  <Input type="number" min="0" step="0.01" value={form.exchange_rate} onChange={(e) => { setTcManual(true); set("exchange_rate", e.target.value); }} />
+                  <CotizacionDelDia valorActual={form.exchange_rate} onUsar={(v) => { setTcManual(true); set("exchange_rate", String(v)); }} />
                 </div>
               ) : <div className="hidden sm:block" />}
               <div>
@@ -182,12 +208,34 @@ export default function NewPurchaseOrder() {
                 <p className="text-[11px] text-slate-400 mt-1">Cargá los costos sin IVA; se suma al total</p>
               </div>
               <div>
-                <Label>¿Cómo se pagó?</Label>
-                <select value={form.payment_method_id} onChange={(e) => set("payment_method_id", e.target.value)} className={selectClase}>
-                  <option value="">Sin especificar</option>
-                  {metodos.filter((m) => m.is_active !== false || String(m.id) === form.payment_method_id).map((m) => <option key={m.id} value={String(m.id)}>{m.name}</option>)}
+                <Label>Condición de pago</Label>
+                <select
+                  value={form.payment_type === "credito" ? String(form.credit_days) : "contado"}
+                  onChange={(e) => e.target.value === "contado"
+                    ? set("payment_type", "contado")
+                    : setForm((f) => ({ ...f, payment_type: "credito", credit_days: Number(e.target.value) }))}
+                  className={selectClase}
+                >
+                  <option value="contado">Contado</option>
+                  {/* Si la compra se hizo con un plazo que no está en la lista, igual se muestra */}
+                  {[...new Set([...PLAZOS_CREDITO, ...(form.payment_type === "credito" ? [Number(form.credit_days)] : [])])].sort((a, b) => a - b)
+                    .map((d) => <option key={d} value={String(d)}>Crédito a {d} días</option>)}
                 </select>
               </div>
+              {form.payment_type === "contado" ? (
+                <div>
+                  <Label>¿Cómo se pagó?</Label>
+                  <select value={form.payment_method_id} onChange={(e) => set("payment_method_id", e.target.value)} className={selectClase}>
+                    <option value="">Sin especificar</option>
+                    {metodos.filter((m) => m.is_active !== false || String(m.id) === form.payment_method_id).map((m) => <option key={m.id} value={String(m.id)}>{m.name}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-100 rounded-md px-3 py-2 text-xs text-amber-800 self-end">
+                  Vence el <b>{fmtFecha(moment(form.order_date).add(Number(form.credit_days) || 0, "days"))}</b>.
+                  Queda como deuda y cuenta como gasto recién cuando se paga.
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -211,6 +259,7 @@ export default function NewPurchaseOrder() {
               <div className="flex justify-between text-sm"><span className="text-slate-500">IVA {form.tax_rate}%</span><span>{fmtMoneda(iva, form.currency)}</span></div>
               <div className="flex justify-between text-lg font-bold border-t pt-3"><span>Total</span><span className="text-[#E8461E]">{fmtMoneda(total, form.currency)}</span></div>
               {form.currency === "USD" && <p className="text-xs text-slate-500 text-right">= {fmtMoneda(total * tc, "UYU")} en pesos</p>}
+              <p className="text-xs text-slate-500 text-right">{form.payment_type === "credito" ? `A crédito, ${form.credit_days} días` : "De contado"}</p>
               {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">{error}</div>}
               <Button className="w-full bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => enviar(false)} disabled={guardar.isPending || bloqueada}>
                 {guardar.isPending ? "Guardando…" : editId ? "Guardar cambios" : "Registrar compra"}

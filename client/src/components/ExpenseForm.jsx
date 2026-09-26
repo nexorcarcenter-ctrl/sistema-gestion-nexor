@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ExpenseCategory } from "@/entities/ExpenseCategory";
 import { getDefaultExchangeRate } from "@/utils";
 import { Plus, Check, X } from "lucide-react";
+import CotizacionDelDia, { useCotizacion } from "./CotizacionDelDia";
 import moment from "moment";
 
 const fmt = (n) => `$${Math.round(Number(n) || 0).toLocaleString("es-UY")}`;
@@ -17,6 +18,8 @@ export default function ExpenseForm({ open, onClose, onGuardar, categorias, meto
   const [nuevaCategoria, setNuevaCategoria] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const { data: cotizacion } = useCotizacion();
+  const tcPropuesto = String(cotizacion?.venta || getDefaultExchangeRate());
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +42,7 @@ export default function ExpenseForm({ open, onClose, onGuardar, categorias, meto
       description: "",
       amount: "",
       currency: "UYU",
-      exchange_rate: String(getDefaultExchangeRate()),
+      exchange_rate: tcPropuesto,
       payment_method_id: "",
       supplier_name: "",
       is_fixed: false,
@@ -124,6 +127,7 @@ export default function ExpenseForm({ open, onClose, onGuardar, categorias, meto
                 <span className="text-xs font-semibold text-slate-700 shrink-0">= {fmt(enPesos)}</span>
               </div>
             )}
+            {form.currency === "USD" && <CotizacionDelDia valorActual={form.exchange_rate} onUsar={(v) => set("exchange_rate", String(v))} />}
           </div>
 
           <div>

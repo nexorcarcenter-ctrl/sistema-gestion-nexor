@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import SupplierForm from "../components/SupplierForm";
-import { fmtMoneda, fmtFecha, etiquetaCondicion, ESTADOS_COMPRA } from "../components/purchaseFormat";
+import { fmtMoneda, fmtFecha, etiquetaCondicion, ESTADOS_COMPRA, estadoPago } from "../components/purchaseFormat";
 
 export default function Suppliers() {
   const queryClient = useQueryClient();
@@ -22,6 +22,18 @@ export default function Suppliers() {
   const [aArchivar, setAArchivar] = useState(null);
 
   const { data: suppliers = [], isLoading } = useQuery({ queryKey: ["suppliers", "activos"], queryFn: () => Supplier.filter({ is_active: true }, "name", 500) });
+  const { data: deudas = [] } = useQuery({ queryKey: ["purchase-debts"], queryFn: () => PurchaseOrder.deudas() });
+  // Lo que se le debe a cada proveedor, separado por moneda: una deuda en
+  // dólares se paga en dólares
+  const deudaDe = useMemo(() => {
+    const m = {};
+    for (const d of deudas) {
+      const x = m[d.supplier_id] ||= { UYU: 0, USD: 0, vencida: false };
+      x[d.currency === "USD" ? "USD" : "UYU"] += d.saldo;
+      if (d.dias_para_vencer != null && d.dias_para_vencer < 0) x.vencida = true;
+    }
+    return m;
+  }, [deudas]);
 
   const saveMutation = useMutation({
     mutationFn: (data) => editSupplier ? Supplier.update(editSupplier.id, data) : Supplier.create({ ...data, is_active: true }),
@@ -70,6 +82,12 @@ export default function Suppliers() {
                 {supplier.phone && <div className="flex items-center gap-2 text-slate-500"><Phone className="h-3.5 w-3.5" /><span>{supplier.phone}</span></div>}
                 {supplier.email && <div className="flex items-center gap-2 text-slate-500"><Mail className="h-3.5 w-3.5" /><span className="truncate">{supplier.email}</span></div>}
               </div>
+              {deudaDe[supplier.id] && (
+                <p className={`mt-2 text-xs font-medium ${deudaDe[supplier.id].vencida ? "text-red-600" : "text-amber-700"}`}>
+                  Se le debe {[deudaDe[supplier.id].UYU > 0 && fmtMoneda(Math.round(deudaDe[supplier.id].UYU), "UYU"), deudaDe[supplier.id].USD > 0 && fmtMoneda(deudaDe[supplier.id].USD, "USD")].filter(Boolean).join(" + ")}
+                  {deudaDe[supplier.id].vencida && " · hay vencidas"}
+                </p>
+              )}
               <div className="mt-3 pt-3 border-t flex items-center justify-between text-xs">
                 <span className="text-slate-400">{etiquetaCondicion(supplier.payment_terms)}</span>
                 <span className="text-slate-600 flex items-center gap-1">
@@ -160,13 +178,18 @@ function FichaProveedor({ proveedor, onClose }) {
                 <div className="divide-y">
                   {data.compras.map((c) => {
                     const estado = ESTADOS_COMPRA[c.status] || { etiqueta: c.status, clase: "bg-slate-100 text-slate-600" };
+                    const pago = c.payment_type === "credito" ? estadoPago(c) : null;
                     return (
                       <Link key={c.id} to={createPageUrl("PurchaseOrderDetail") + "?id=" + c.id} onClick={onClose} className="flex items-center justify-between gap-2 py-2 hover:bg-slate-50 px-1 rounded">
                         <div>
-                          <p className="text-sm font-mono font-semibold">{c.po_number} <span className={`ml-1 font-sans text-[10px] font-medium px-1.5 py-0.5 rounded ${estado.clase}`}>{estado.etiqueta}</span></p>
+                          <p className="text-sm font-mono font-semibold">{c.po_number} <span className={`ml-1 font-sans text-[10px] font-medium px-1.5 py-0.5 rounded ${estado.clase}`}>{estado.etiqueta}</span>
+                            {pago && <span className={`ml-1 font-sans text-[10px] font-medium px-1.5 py-0.5 rounded ${pago.clase}`}>{pago.etiqueta}</span>}</p>
                           <p className="text-xs text-slate-500">{[fmtFecha(c.order_date), c.payment_method_name, c.invoice_number && `Factura ${c.invoice_number}`].filter(Boolean).join(" · ")}</p>
                         </div>
-                        <p className={`text-sm font-semibold ${c.status === "cancelled" ? "line-through text-slate-400" : ""}`}>{fmtMoneda(c.total, c.currency || "UYU")}</p>
+                        <div className="text-right">
+                          <p className={`text-sm font-semibold ${c.status === "cancelled" ? "line-through text-slate-400" : ""}`}>{fmtMoneda(c.total, c.currency || "UYU")}</p>
+                          {pago && c.saldo > 0.009 && <p className="text-[11px] text-red-600">debe {fmtMoneda(c.saldo, c.currency || "UYU")}</p>}
+                        </div>
                       </Link>
                     );
                   })}

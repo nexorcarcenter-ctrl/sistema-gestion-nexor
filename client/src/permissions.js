@@ -8,7 +8,7 @@
 
 const PERMISOS = {
   admin:   { verReportes: true,  verGastos: true,  gestionarUsuarios: true,  verModulosEnConstruccion: true,  gestionarCompras: true,  archivar: "*",           eliminar: "*" },
-  gerente: { verReportes: true,  verGastos: true,  gestionarUsuarios: false, verModulosEnConstruccion: false, gestionarCompras: false, archivar: ["products"],  eliminar: ["expenses"] },
+  gerente: { verReportes: true,  verGastos: true,  gestionarUsuarios: false, verModulosEnConstruccion: false, gestionarCompras: true,  archivar: ["products", "suppliers"], eliminar: ["expenses"] },
   user:    { verReportes: false, verGastos: false, gestionarUsuarios: false, verModulosEnConstruccion: false, gestionarCompras: false, archivar: [],            eliminar: [] },
 };
 
