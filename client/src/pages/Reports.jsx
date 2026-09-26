@@ -59,7 +59,6 @@ export default function Reports() {
   const serieChart = serie.map((s) => ({
     mes: mesCorto(s.mes),
     Ingresos: s.ingresos,
-    Costo: s.costo,
     "Gastos operativos": s.gastos - (s.compras || 0),
     Compras: s.compras || 0,
     Resultado: s.resultado,
@@ -102,7 +101,7 @@ export default function Reports() {
               color="text-[#E8461E]" bgColor="bg-[#E8461E]/5"
             />
             <StatCard
-              title={t("grossProfitLabel")} value={fmt(a.utilidad)} icon={TrendingUp}
+              title="Ganancia s/ lo vendido" value={fmt(a.utilidad)} icon={TrendingUp}
               subtitle={<DeltaBadge actual={a.utilidad} anterior={prev?.utilidad} />}
               color="text-emerald-600" bgColor="bg-emerald-50"
             />
@@ -126,51 +125,101 @@ export default function Reports() {
 
           {sinDatos && <Vacio>{t("noDataPeriod")}</Vacio>}
 
-          {/* La cadena completa: de lo facturado a lo que realmente queda */}
+          <div className="grid lg:grid-cols-3 gap-4">
+            {/* 1. Resultado: lo que entró menos todo lo que salió. La mercadería
+                se descuenta acá, una sola vez, como compra. */}
+            <Card className="border-0 shadow-sm lg:col-span-2">
+              <CardHeader><CardTitle className="text-sm">Resultado del período</CardTitle></CardHeader>
+              <CardContent>
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b border-slate-100">
+                      <td className="py-2 text-slate-600">{t("totalRevenue")}</td>
+                      <td className="py-2 text-right font-semibold tabular-nums">{fmt(a.ingresos)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 text-slate-500 pl-4">− Gastos operativos</td>
+                      <td className="py-2 text-right text-amber-700 tabular-nums">{fmt(a.gastos_operativos)}</td>
+                    </tr>
+                    <tr className="border-b border-slate-100">
+                      <td className="py-2 text-slate-500 pl-4">− Compras de mercadería</td>
+                      <td className="py-2 text-right text-violet-700 tabular-nums">{fmt(a.compras)}</td>
+                    </tr>
+                    <tr>
+                      <td className={`py-2.5 font-bold ${a.resultado_neto >= 0 ? "text-slate-800" : "text-red-700"}`}>
+                        = {t("netResult")}
+                      </td>
+                      <td className={`py-2.5 text-right text-lg font-bold tabular-nums ${a.resultado_neto >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                        {fmt(a.resultado_neto)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="text-xs text-slate-400 mt-2">
+                  {a.resultado_neto >= 0 ? t("profitLoss") : t("lossLabel")} · {t("netMargin")}: {pct(a.margen_neto)}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* El valor del stock al lado del resultado: un mes con reposición
+                grande da bajo, pero esa plata quedó en el estante, no se perdió */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader><CardTitle className="text-sm">Mercadería en stock</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-[#E8461E]">{fmt(inv?.valor_inventario)}</p>
+                <p className="text-xs text-slate-500 mt-1">valor a costo de lo que hay hoy en el estante</p>
+                <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                  Las compras restan en el resultado cuando se pagan. Si un mes se repone mucho stock el resultado baja,
+                  pero esa plata queda acá, en mercadería para vender.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 2. Rentabilidad: cuánto deja lo que se vende. Es informativo y no
+              resta en el resultado: el costo ya se descontó al comprar. */}
           <Card className="border-0 shadow-sm">
-            <CardHeader><CardTitle className="text-sm">{t("resultChain")}</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-sm">Rentabilidad de lo vendido</CardTitle>
+              <p className="text-xs text-slate-400">Informativo: muestra la ganancia de cada venta, no se resta del resultado</p>
+            </CardHeader>
             <CardContent>
               <table className="w-full text-sm">
+                <thead className="text-xs text-slate-500 uppercase border-b">
+                  <tr>
+                    <th className="text-left py-2 font-medium"></th>
+                    <th className="text-right py-2 font-medium">Venta</th>
+                    <th className="text-right py-2 font-medium">Costo</th>
+                    <th className="text-right py-2 font-medium">Ganancia</th>
+                    <th className="text-right py-2 font-medium">Margen</th>
+                  </tr>
+                </thead>
                 <tbody>
                   <tr className="border-b border-slate-100">
-                    <td className="py-2 text-slate-600">{t("totalRevenue")}</td>
-                    <td className="py-2 text-right font-semibold tabular-nums">{fmt(a.ingresos)}</td>
-                  </tr>
-                  <tr className="border-b border-slate-100">
-                    <td className="py-2 text-slate-500 pl-4">− {t("productCost")}</td>
-                    <td className="py-2 text-right text-amber-700 tabular-nums">{fmt(a.costo_productos)}</td>
+                    <td className="py-2 text-slate-600">{t("fromProducts")}</td>
+                    <td className="py-2 text-right tabular-nums">{fmt(a.ingresos_productos)}</td>
+                    <td className="py-2 text-right tabular-nums text-slate-500">{fmt(a.costo_productos)}</td>
+                    <td className="py-2 text-right tabular-nums font-semibold">{fmt(a.ingresos_productos - a.costo_productos)}</td>
+                    <td className="py-2 text-right tabular-nums text-slate-500">
+                      {pct(a.ingresos_productos > 0 ? ((a.ingresos_productos - a.costo_productos) / a.ingresos_productos) * 100 : 0)}
+                    </td>
                   </tr>
                   <tr className="border-b-2 border-slate-200">
-                    <td className="py-2 font-medium text-slate-700">= {t("grossProfitLabel")}</td>
-                    <td className="py-2 text-right font-bold text-emerald-700 tabular-nums">{fmt(a.utilidad)}</td>
+                    <td className="py-2 text-slate-600">{t("fromServices")} <span className="text-xs text-slate-400">(sin costo)</span></td>
+                    <td className="py-2 text-right tabular-nums">{fmt(a.ingresos_servicios)}</td>
+                    <td className="py-2 text-right tabular-nums text-slate-400">—</td>
+                    <td className="py-2 text-right tabular-nums font-semibold">{fmt(a.ingresos_servicios)}</td>
+                    <td className="py-2 text-right tabular-nums text-slate-500">{a.ingresos_servicios > 0 ? "100.0%" : "—"}</td>
                   </tr>
                   <tr>
-                    <td className="py-2 text-slate-500 pl-4">− {t("companyExpenses")}</td>
-                    <td className="py-2 text-right text-amber-700 tabular-nums">{fmt(a.gastos)}</td>
-                  </tr>
-                  {/* Siempre se discrimina: cuánto es de funcionamiento y cuánto de mercadería comprada */}
-                  <tr>
-                    <td className="py-1 text-xs text-slate-400 pl-8">Gastos operativos</td>
-                    <td className="py-1 text-right text-xs text-slate-500 tabular-nums">{fmt(a.gastos_operativos)}</td>
-                  </tr>
-                  <tr className="border-b border-slate-100">
-                    <td className="py-1 pb-2 text-xs text-slate-400 pl-8">Compras de mercadería</td>
-                    <td className="py-1 pb-2 text-right text-xs text-slate-500 tabular-nums">{fmt(a.compras)}</td>
-                  </tr>
-                  <tr>
-                    <td className={`py-2.5 font-bold ${a.resultado_neto >= 0 ? "text-slate-800" : "text-red-700"}`}>
-                      = {t("netResult")}
-                    </td>
-                    <td className={`py-2.5 text-right text-lg font-bold tabular-nums ${a.resultado_neto >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-                      {fmt(a.resultado_neto)}
-                    </td>
+                    <td className="py-2.5 font-bold text-slate-800">Ganancia sobre lo vendido</td>
+                    <td className="py-2.5 text-right tabular-nums">{fmt(a.ingresos)}</td>
+                    <td className="py-2.5 text-right tabular-nums text-slate-500">{fmt(a.costo_productos)}</td>
+                    <td className="py-2.5 text-right text-lg font-bold tabular-nums text-emerald-700">{fmt(a.utilidad)}</td>
+                    <td className="py-2.5 text-right tabular-nums font-semibold">{pct(a.margen)}</td>
                   </tr>
                 </tbody>
               </table>
-              <p className="text-xs text-slate-400 mt-2">
-                {a.resultado_neto >= 0 ? t("profitLoss") : t("lossLabel")} · {t("netMargin")}: {pct(a.margen_neto)}
-                {" · "}{t("profitMargin")}: {pct(a.margen)}
-              </p>
             </CardContent>
           </Card>
 
@@ -187,7 +236,6 @@ export default function Reports() {
                     <RC.Tooltip formatter={(v) => fmt(v)} />
                     <RC.Legend wrapperStyle={{ fontSize: 11 }} />
                     <RC.Bar dataKey="Ingresos" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                    <RC.Bar dataKey="Costo" fill="#fb923c" radius={[4, 4, 0, 0]} />
                     <RC.Bar dataKey="Gastos operativos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
                     <RC.Bar dataKey="Compras" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                     <RC.Bar dataKey="Resultado" fill="#14b8a6" radius={[4, 4, 0, 0]} />

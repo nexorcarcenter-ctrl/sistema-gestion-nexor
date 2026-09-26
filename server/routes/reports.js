@@ -97,11 +97,15 @@ async function totales(desde, hasta) {
   // Se calcula por diferencia para no perder las ventas sin ítems cargados.
   const ingresosServicios = Math.max(ingresos - ingresosProductos, 0);
 
-  // Dos niveles distintos, y conviene no confundirlos:
-  // la utilidad bruta solo descuenta la mercaderia vendida; el resultado neto
-  // descuenta ademas alquiler, sueldos y todo lo que cuesta tener abierto.
+  // El costo de la mercaderia se descuenta una sola vez: cuando se compra.
+  // Las compras ya estan dentro de gastos (expense_type = 'compra'), asi que
+  // el resultado neto es lo que entro menos todo lo que salio.
+  //
+  // La utilidad (venta menos costo de lo vendido) se sigue calculando, pero
+  // es informativa: dice cuanto deja cada venta, no se vuelve a restar. Si se
+  // restara ademas, la mercaderia quedaria contada dos veces.
   const utilidad      = ingresos - costoProductos;
-  const resultadoNeto = utilidad - gastos;
+  const resultadoNeto = ingresos - gastos;
 
   return {
     ventas,
@@ -212,7 +216,7 @@ router.get("/timeseries", async (req, res) => {
         COALESCE(i.ingresos, 0) - COALESCE(c.costo, 0) AS utilidad,
         COALESCE(g.gastos, 0)                    AS gastos,
         COALESCE(g.compras, 0)                   AS compras,
-        COALESCE(i.ingresos, 0) - COALESCE(c.costo, 0) - COALESCE(g.gastos, 0) AS resultado,
+        COALESCE(i.ingresos, 0) - COALESCE(g.gastos, 0) AS resultado,
         COALESCE(i.ventas, 0)                    AS ventas
       FROM meses m
       LEFT JOIN ingresos i ON i.mes = m.mes

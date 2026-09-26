@@ -109,13 +109,13 @@ export default function AdminDashboard() {
               color="text-blue-600" bgColor="bg-blue-50"
             />
             <StatCard
-              title="Utilidad Bruta" value={fmt(a.utilidad)} icon={TrendingUp}
+              title="Ganancia s/ lo vendido" value={fmt(a.utilidad)} icon={TrendingUp}
               subtitle={`${a.margen.toFixed(1)}% de margen`}
               color="text-emerald-600" bgColor="bg-emerald-50"
             />
             <StatCard
               title="Resultado Neto" value={fmt(a.resultado_neto)} icon={Scale}
-              subtitle={`Después de ${fmt(a.gastos)} de gastos`}
+              subtitle={`Ventas − ${fmt(a.gastos_operativos)} gastos − ${fmt(a.compras)} compras`}
               color={a.resultado_neto >= 0 ? "text-emerald-600" : "text-red-600"}
               bgColor={a.resultado_neto >= 0 ? "bg-emerald-50" : "bg-red-50"}
             />
