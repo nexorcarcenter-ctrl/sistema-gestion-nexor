@@ -129,7 +129,20 @@ export default function ProductRow({ product, onEdit, onDelete, onAddStock, pued
 
       {/* Proveedor */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-xs text-slate-500 truncate max-w-[120px] block">{product.supplierName || "—"}</span>
+        {product.proveedores?.length ? (
+          <div
+            className="max-w-[160px]"
+            title={product.proveedores.map((x) => `${x.supplier_name}: ${fmt(Math.round(x.ultimo_costo_uyu))}`).join("\n")}
+          >
+            <span className="text-xs text-slate-700 font-medium truncate block">{product.proveedores[0].supplier_name}</span>
+            <span className={`text-[11px] ${product.proveedores.length > 1 ? "text-emerald-600" : "text-slate-400"}`}>
+              {fmt(Math.round(product.proveedores[0].ultimo_costo_uyu))}
+              {product.proveedores.length > 1 ? ` · más barato de ${product.proveedores.length}` : " · última compra"}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-500 truncate max-w-[120px] block">{product.supplierName || "—"}</span>
+        )}
       </td>
 
       {/* Estado */}

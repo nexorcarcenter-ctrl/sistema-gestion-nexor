@@ -6,7 +6,8 @@ import { Category } from "@/entities/Category";
 import { Supplier } from "@/entities/Supplier";
 import { CarBrand } from "@/entities/CarBrand";
 import User from "@/entities/User";
-import { puedeDarDeBaja } from "@/permissions";
+import { puedeDarDeBaja, puede } from "@/permissions";
+import { PurchaseOrder } from "@/entities/PurchaseOrder";
 import { Search, Plus, Package, Upload, ChevronUp, ChevronDown, ChevronsUpDown, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,9 @@ export default function Products() {
   const { data: products = [], isLoading } = useQuery({ queryKey: ["products"], queryFn: () => Product.list("name", 500) });
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: () => Category.filter({ is_active: true }, "sort_order", 50) });
   const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => Supplier.filter({ is_active: true }, "name", 100) });
+  // Precios de compra por proveedor: solo para quien maneja compras
+  const veCompras = puede(rol, "gestionarCompras");
+  const { data: precios = [] } = useQuery({ queryKey: ["purchase-prices"], queryFn: () => PurchaseOrder.precios(), enabled: veCompras });
   const { data: carBrands = [], refetch: refetchCarBrands } = useQuery({ queryKey: ["carBrands"], queryFn: () => CarBrand.list("name", 200) });
 
   const saveMutation = useMutation({
@@ -105,8 +109,19 @@ export default function Products() {
     setDeletingAll(false);
   };
 
+  // La columna Proveedor muestra al que lo vendió más barato la última vez.
+  // Si el producto nunca pasó por Compra Directa, queda el proveedor cargado
+  // a mano en la ficha.
+  const conProveedor = useMemo(() => {
+    const porProducto = Object.fromEntries((veCompras ? precios : []).map((x) => [String(x.product_id), x.proveedores]));
+    return products.map((p) => {
+      const proveedores = porProducto[String(p.id)] || [];
+      return { ...p, proveedores, proveedorMostrado: proveedores[0]?.supplier_name || p.supplierName || "" };
+    });
+  }, [products, precios, veCompras]);
+
   const filteredProducts = useMemo(() => {
-    const filtered = products.filter((p) => {
+    const filtered = conProveedor.filter((p) => {
       const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || (statusFilter === "active" && p.status === "active") || (statusFilter === "inactive" && p.status !== "active") || (statusFilter === "low" && p.stockQuantity <= p.minStock);
       return matchSearch && matchStatus && (categoryFilter === "all" || p.category === categoryFilter);
@@ -119,7 +134,7 @@ export default function Products() {
       if (va > vb) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
-  }, [products, search, statusFilter, categoryFilter, sortCol, sortDir]);
+  }, [conProveedor, search, statusFilter, categoryFilter, sortCol, sortDir]);
 
   const stats = { total: products.length, active: products.filter((p) => p.status === "active").length, lowStock: products.filter((p) => p.stockQuantity <= p.minStock).length };
 
@@ -175,7 +190,7 @@ export default function Products() {
                     { label: "P. Venta",  col: "unitPrice",     align: "right" },
                     { label: "P. Costo",  col: "costPrice",     align: "right" },
                     { label: "Stock",     col: "stockQuantity", align: "left"  },
-                    { label: "Proveedor", col: "supplierName",  align: "left"  },
+                    { label: "Proveedor", col: "proveedorMostrado", align: "left" },
                     { label: "Estado",    col: "status",        align: "left"  },
                   ].map(({ label, col, align }) => (
                     <th key={label} className={`px-4 py-3 font-medium text-${align}`}>
@@ -300,7 +315,7 @@ export default function Products() {
                   <td style={{ padding: "3px 4px", textAlign: "right", fontWeight: 500, color: "#ea580c" }}>{fmt(p.unitPrice)}</td>
                   <td style={{ padding: "3px 4px", textAlign: "center", fontWeight: "bold", color: isLow ? "#b45309" : "#1e293b" }}>{qty}</td>
                   <td style={{ padding: "3px 4px", textAlign: "center", color: "#94a3b8" }}>{min}</td>
-                  <td style={{ padding: "3px 4px", color: "#64748b", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.supplierName || "—"}</td>
+                  <td style={{ padding: "3px 4px", color: "#64748b", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.proveedorMostrado || "—"}</td>
                   <td style={{ padding: "3px 4px" }}>
                     <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 10, background: p.status === "active" ? "#dcfce7" : "#f1f5f9", color: p.status === "active" ? "#15803d" : "#64748b" }}>
                       {p.status === "active" ? "Activo" : "Inactivo"}
