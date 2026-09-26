@@ -48,11 +48,15 @@ function leerCompra(body) {
     product_id: i.product_id,
     quantity: Number(i.quantity),
     unit_cost: redondear(i.unit_cost),
+    // Opcional: si el costo cambio, se puede ajustar el precio de venta en el
+    // mismo momento. Es una decision de precios: anular la compra no la deshace.
+    sale_price: i.sale_price === undefined || i.sale_price === null || i.sale_price === "" ? null : redondear(i.sale_price),
   }));
   if (items.length === 0) errores.push("Agregá al menos un producto");
   if (items.some((i) => !i.product_id)) errores.push("Hay un producto sin identificar");
   if (items.some((i) => !Number.isInteger(i.quantity) || i.quantity <= 0)) errores.push("Las cantidades tienen que ser enteros mayores a cero");
   if (items.some((i) => i.unit_cost < 0)) errores.push("Hay un costo negativo");
+  if (items.some((i) => i.sale_price !== null && !(i.sale_price > 0))) errores.push("El precio de venta tiene que ser mayor a cero");
   if (new Set(items.map((i) => i.product_id)).size !== items.length) errores.push("Hay un producto repetido");
 
   return {
@@ -139,6 +143,9 @@ async function aplicarItems(client, orden, compra, proveedor, anterior = {}) {
     // original, no el que le puso la version que se esta corrigiendo
     const costoPrevio = previo ? previo.costoPrevio : p.cost_price;
     await client.query("UPDATE products SET cost_price = $1, updated_at = NOW() WHERE id = $2", [costoUyu, p.id]);
+    if (item.sale_price !== null) {
+      await client.query("UPDATE products SET unit_price = $1, updated_at = NOW() WHERE id = $2", [item.sale_price, p.id]);
+    }
 
     await client.query(
       `INSERT INTO purchase_order_items

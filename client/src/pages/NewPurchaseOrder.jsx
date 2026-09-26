@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import POItemsEditor from "../components/POItemsEditor";
 import SupplierForm from "../components/SupplierForm";
 import StockVendidoDialog from "../components/StockVendidoDialog";
+import ProductoRapidoDialog from "../components/ProductoRapidoDialog";
+import { Category } from "@/entities/Category";
 import { fmtMoneda, fmtFecha, TASAS_IVA, PLAZOS_CREDITO, diasDeCondicion } from "../components/purchaseFormat";
 import CotizacionDelDia, { useCotizacion } from "../components/CotizacionDelDia";
 import moment from "moment";
@@ -49,10 +51,12 @@ export default function NewPurchaseOrder() {
   const [error, setError] = useState("");
   const [nuevoProveedor, setNuevoProveedor] = useState(false);
   const [faltantes, setFaltantes] = useState(null);
+  const [productoNuevo, setProductoNuevo] = useState(null);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers", "activos"], queryFn: () => Supplier.filter({ is_active: true }, "name", 500) });
   const { data: products = [] } = useQuery({ queryKey: ["products", "activos"], queryFn: () => Product.filter({ is_active: true }, "name", 5000) });
+  const { data: categorias = [] } = useQuery({ queryKey: ["categories"], queryFn: () => Category.filter({ is_active: true }, "sort_order", 100) });
   const { data: metodos = [] } = useQuery({ queryKey: ["payment-methods"], queryFn: () => PaymentMethod.list("name", 50) });
   const { data: precios = [] } = useQuery({ queryKey: ["purchase-prices"], queryFn: () => PurchaseOrder.precios() });
   const { data: original } = useQuery({ queryKey: ["purchase-order", editId], queryFn: () => PurchaseOrder.detalle(editId), enabled: !!editId });
@@ -138,7 +142,10 @@ export default function NewPurchaseOrder() {
       exchange_rate: tc,
       tax_rate: Number(form.tax_rate) || 0,
       credit_days: form.payment_type === "credito" ? Number(form.credit_days) : 0,
-      items: items.map((i) => ({ product_id: i.product_id, quantity: i.quantity, unit_cost: Number(i.unit_cost) || 0 })),
+      items: items.map((i) => ({
+        product_id: i.product_id, quantity: i.quantity, unit_cost: Number(i.unit_cost) || 0,
+        sale_price: i.sale_price === "" || i.sale_price === undefined ? null : i.sale_price,
+      })),
       confirmar_stock: confirmarStock,
     });
   };
@@ -242,6 +249,7 @@ export default function NewPurchaseOrder() {
           <POItemsEditor
             products={products} items={items} onItemsChange={setItems}
             currency={form.currency} exchangeRate={tc} supplierId={form.supplier_id} precios={precios}
+            onCrearProducto={(texto) => setProductoNuevo(texto)}
           />
 
           <Card className="border-0 shadow-sm">
@@ -268,6 +276,15 @@ export default function NewPurchaseOrder() {
           </Card>
         </div>
       </div>
+
+      <ProductoRapidoDialog
+        nombreInicial={productoNuevo} categorias={categorias} productos={products}
+        onClose={() => setProductoNuevo(null)}
+        onCreado={(p) => {
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+          setItems((l) => [...l, { product_id: String(p.id), product_name: p.name, sku: p.sku, quantity: 1, unit_cost: 0 }]);
+        }}
+      />
 
       <StockVendidoDialog
         faltantes={faltantes} accion="guardar la corrección"

@@ -23,7 +23,7 @@ function normalizeCategory(str) {
   return (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 
-function generateSKU(category, existingProducts) {
+export function generateSKU(category, existingProducts) {
   // Find prefix with accent-insensitive match
   const normCat = normalizeCategory(category);
   const prefixKey = Object.keys(CATEGORY_PREFIXES).find(k => normalizeCategory(k) === normCat);

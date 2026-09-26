@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Package, Trash2, TrendingDown } from "lucide-react";
+import { Search, Package, Trash2, TrendingDown, Plus, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,10 @@ import { fmtMoneda, fmtFecha } from "./purchaseFormat";
  * proveedor vendió ese producto más barato la última vez: es el momento en
  * que el dato sirve, antes de pagar.
  */
-export default function POItemsEditor({ products, items, onItemsChange, currency, exchangeRate, supplierId, precios = [] }) {
+// Por debajo de este margen se avisa. Es una referencia, no un bloqueo.
+const MARGEN_MINIMO = 20;
+
+export default function POItemsEditor({ products, items, onItemsChange, currency, exchangeRate, supplierId, precios = [], onCrearProducto }) {
   const [search, setSearch] = useState("");
   const q = search.toLowerCase();
   const filtered = products.filter((p) => !search || p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q));
@@ -32,6 +35,13 @@ export default function POItemsEditor({ products, items, onItemsChange, currency
     setSearch("");
   };
 
+  // Precio de venta con el que queda el producto: el nuevo si se cambió en
+  // esta compra, si no el que ya tiene
+  const precioVenta = (item) => {
+    if (item.sale_price !== undefined && item.sale_price !== null && item.sale_price !== "") return Number(item.sale_price) || 0;
+    return Number(products.find((p) => String(p.id) === String(item.product_id))?.unit_price) || 0;
+  };
+
   const updateItem = (idx, field, value) => {
     onItemsChange(items.map((item, i) => (i === idx ? { ...item, [field]: value } : item)));
   };
@@ -48,7 +58,7 @@ export default function POItemsEditor({ products, items, onItemsChange, currency
       <CardContent>
         {search && (
           <div className="mb-4 max-h-56 overflow-y-auto border rounded-lg divide-y">
-            {filtered.length === 0 && <p className="text-sm text-slate-400 p-3">No hay productos con ese nombre. Si es nuevo, primero cargalo en Productos.</p>}
+            {filtered.length === 0 && <p className="text-sm text-slate-400 px-3 pt-3 pb-1">No hay productos con ese nombre.</p>}
             {filtered.slice(0, 12).map((p) => (
               <button key={p.id} className="w-full flex items-center gap-3 p-2 hover:bg-slate-50 text-left" onClick={() => addItem(p)}>
                 <Package className="h-4 w-4 text-slate-400" />
@@ -59,6 +69,11 @@ export default function POItemsEditor({ products, items, onItemsChange, currency
                 <span className="text-xs text-slate-500 shrink-0">costo {fmtMoneda(p.cost_price, "UYU")}</span>
               </button>
             ))}
+            {onCrearProducto && (
+              <button className="w-full flex items-center gap-2 p-2 text-left text-sm text-[#E8461E] hover:bg-orange-50 font-medium" onClick={() => { onCrearProducto(search.trim()); setSearch(""); }}>
+                <Plus className="h-4 w-4" />Crear producto nuevo «{search.trim()}»
+              </button>
+            )}
           </div>
         )}
         {items.length ? (
@@ -89,6 +104,12 @@ export default function POItemsEditor({ products, items, onItemsChange, currency
                             Última vez a este proveedor: {fmtMoneda(esteProveedor.ultimo_costo, esteProveedor.ultima_moneda)} ({fmtFecha(esteProveedor.ultima_fecha)})
                           </p>
                         )}
+                        <LineaMargen
+                          venta={precioVenta(item)}
+                          costo={costoUyu}
+                          nuevo={item.sale_price}
+                          onCambiar={(v) => updateItem(idx, "sale_price", v)}
+                        />
                         {masBarato && (
                           <p className="text-[11px] text-emerald-700 mt-0.5 flex items-center gap-1">
                             <TrendingDown className="h-3 w-3" />
@@ -115,5 +136,46 @@ export default function POItemsEditor({ products, items, onItemsChange, currency
         ) : <p className="text-center py-8 text-slate-400 text-sm">Buscá y agregá los productos que compraste</p>}
       </CardContent>
     </Card>
+  );
+}
+
+// Margen de la línea: con el costo de esta compra, ¿cuánto deja venderlo al
+// precio actual? Si no alcanza, se puede ajustar el precio de venta ahí mismo.
+function LineaMargen({ venta, costo, nuevo, onCambiar }) {
+  const [editando, setEditando] = useState(false);
+  const cambiado = nuevo !== undefined && nuevo !== null && nuevo !== "";
+  if (!(costo > 0)) return null;
+
+  if (editando || cambiado) {
+    return (
+      <div className="flex items-center gap-1.5 mt-1">
+        <span className="text-[11px] text-slate-500 whitespace-nowrap">Nuevo precio $</span>
+        <Input
+          type="number" min="0" step="0.01" autoFocus={editando}
+          value={nuevo ?? ""} onChange={(e) => onCambiar(e.target.value === "" ? "" : parseFloat(e.target.value))}
+          className="h-7 w-24 text-xs"
+        />
+        {venta > 0 && <span className={`text-[11px] whitespace-nowrap ${((venta - costo) / venta) * 100 < MARGEN_MINIMO ? "text-amber-600" : "text-emerald-600"}`}>margen {(((venta - costo) / venta) * 100).toFixed(0)}%</span>}
+        <button type="button" className="text-[11px] text-slate-400 hover:text-slate-600 whitespace-nowrap" onClick={() => { onCambiar(null); setEditando(false); }}>no cambiar</button>
+      </div>
+    );
+  }
+
+  if (!(venta > 0)) {
+    return (
+      <p className="text-[11px] text-amber-600 mt-0.5 flex items-center gap-1">
+        <AlertTriangle className="h-3 w-3" />Sin precio de venta
+        <button type="button" className="text-[#E8461E] hover:underline" onClick={() => setEditando(true)}>ponerle precio</button>
+      </p>
+    );
+  }
+  const margen = ((venta - costo) / venta) * 100;
+  const clase = margen <= 0 ? "text-red-600" : margen < MARGEN_MINIMO ? "text-amber-600" : "text-slate-400";
+  return (
+    <p className={`text-[11px] mt-0.5 flex items-center gap-1 flex-wrap ${clase}`}>
+      {margen < MARGEN_MINIMO && <AlertTriangle className="h-3 w-3" />}
+      Se vende a {fmtMoneda(venta, "UYU")} · {margen <= 0 ? "con este costo se vende a pérdida" : `margen ${margen.toFixed(0)}%`}
+      <button type="button" className="text-[#E8461E] hover:underline ml-1" onClick={() => setEditando(true)}>cambiar precio</button>
+    </p>
   );
 }
