@@ -13,6 +13,8 @@ import moment from "moment";
 const MOVEMENT_STYLES = {
   sale: { icon: ArrowDownCircle, color: "text-red-500", bg: "bg-red-50" },
   purchase: { icon: ArrowUpCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
+  // Lo que descuenta anular o corregir una compra
+  purchase_reversal: { icon: ArrowDownCircle, color: "text-amber-600", bg: "bg-amber-50", label: "anulación compra" },
   adjustment: { icon: RefreshCw, color: "text-blue-500", bg: "bg-blue-50" },
   return: { icon: ArrowUpCircle, color: "text-amber-500", bg: "bg-amber-50" },
   damage: { icon: ArrowDownCircle, color: "text-red-500", bg: "bg-red-50" },
@@ -27,7 +29,7 @@ export default function StockMovements() {
 
   const filteredMovements = useMemo(() => movements.filter((m) => {
     const matchSearch = !search || m.product_name?.toLowerCase().includes(search.toLowerCase()) || m.sku?.toLowerCase().includes(search.toLowerCase());
-    return matchSearch && (typeFilter === "all" || m.movement_type === typeFilter);
+    return matchSearch && (typeFilter === "all" || m.movement_type === typeFilter || (typeFilter === "purchase" && m.movement_type === "purchase_reversal"));
   }), [movements, search, typeFilter]);
 
   if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E8461E]" /></div>;
@@ -54,7 +56,7 @@ export default function StockMovements() {
                   <tr key={m.id} className="border-t hover:bg-slate-50">
                     <td className="p-3 text-sm text-slate-500">{moment(m.createdAt).format("D MMM, HH:mm")}</td>
                     <td className="p-3"><p className="text-sm font-medium text-slate-900">{m.product_name}</p><p className="text-xs text-slate-500">{m.sku}</p></td>
-                    <td className="p-3"><span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium capitalize ${style.bg} ${style.color}`}><Icon className="h-3 w-3" />{m.movement_type}</span></td>
+                    <td className="p-3"><span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium capitalize ${style.bg} ${style.color}`}><Icon className="h-3 w-3" />{style.label || m.movement_type}</span></td>
                     <td className="p-3 text-center font-mono text-sm"><span className={m.quantity >= 0 ? "text-emerald-600" : "text-red-600"}>{m.quantity >= 0 ? "+" : ""}{m.quantity}</span></td>
                     <td className="p-3 text-center text-sm text-slate-500">{m.previous_stock} → {m.new_stock}</td>
                     <td className="p-3"><p className="text-sm text-slate-600">{m.reason || "-"}</p>{m.reference_number && <p className="text-xs text-slate-400">{m.reference_number}</p>}</td>

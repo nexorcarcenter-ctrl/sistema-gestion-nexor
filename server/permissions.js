@@ -21,6 +21,9 @@ const ARCHIVABLES = {
   payment_methods: { columna: "is_active", valorArchivado: false },
   // service_types no tiene is_active: marca su estado en una columna de texto
   service_types:   { columna: "status",    valorArchivado: "inactive" },
+  // Las compras guardan a quien se le compro: borrar el proveedor dejaria
+  // el historial y la comparacion de precios con un nombre huerfano
+  suppliers:       { columna: "is_active", valorArchivado: false },
 };
 
 const PERMISOS = {
@@ -29,6 +32,7 @@ const PERMISOS = {
     verGastos: true,
     gestionarUsuarios: true,
     verModulosEnConstruccion: true,
+    gestionarCompras: true,
     archivar: "*",
     eliminar: "*",
   },
@@ -38,6 +42,8 @@ const PERMISOS = {
     gestionarUsuarios: false,
     // Compras y Proveedores estan a medio hacer: no se le muestran todavia
     verModulosEnConstruccion: false,
+    // Compra directa y proveedores: todavia en prueba, solo el admin
+    gestionarCompras: false,
     archivar: ["products"],
     eliminar: ["expenses"],
   },
@@ -46,6 +52,7 @@ const PERMISOS = {
     verGastos: false,
     gestionarUsuarios: false,
     verModulosEnConstruccion: false,
+    gestionarCompras: false,
     archivar: [],
     eliminar: [],
   },
@@ -59,6 +66,8 @@ const PERMISOS = {
 const TABLAS_RESTRINGIDAS = {
   expenses: "verGastos",
   expense_categories: "verGastos",
+  purchase_orders: "gestionarCompras",
+  purchase_order_items: "gestionarCompras",
 };
 
 function puedeAcceder(rol, tabla) {

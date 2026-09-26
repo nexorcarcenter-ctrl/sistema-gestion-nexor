@@ -60,7 +60,8 @@ export default function Reports() {
     mes: mesCorto(s.mes),
     Ingresos: s.ingresos,
     Costo: s.costo,
-    Gastos: s.gastos,
+    "Gastos operativos": s.gastos - (s.compras || 0),
+    Compras: s.compras || 0,
     Resultado: s.resultado,
   }));
 
@@ -143,9 +144,18 @@ export default function Reports() {
                     <td className="py-2 font-medium text-slate-700">= {t("grossProfitLabel")}</td>
                     <td className="py-2 text-right font-bold text-emerald-700 tabular-nums">{fmt(a.utilidad)}</td>
                   </tr>
-                  <tr className="border-b border-slate-100">
+                  <tr>
                     <td className="py-2 text-slate-500 pl-4">− {t("companyExpenses")}</td>
                     <td className="py-2 text-right text-amber-700 tabular-nums">{fmt(a.gastos)}</td>
+                  </tr>
+                  {/* Siempre se discrimina: cuánto es de funcionamiento y cuánto de mercadería comprada */}
+                  <tr>
+                    <td className="py-1 text-xs text-slate-400 pl-8">Gastos operativos</td>
+                    <td className="py-1 text-right text-xs text-slate-500 tabular-nums">{fmt(a.gastos_operativos)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-1 pb-2 text-xs text-slate-400 pl-8">Compras de mercadería</td>
+                    <td className="py-1 pb-2 text-right text-xs text-slate-500 tabular-nums">{fmt(a.compras)}</td>
                   </tr>
                   <tr>
                     <td className={`py-2.5 font-bold ${a.resultado_neto >= 0 ? "text-slate-800" : "text-red-700"}`}>
@@ -178,7 +188,8 @@ export default function Reports() {
                     <RC.Legend wrapperStyle={{ fontSize: 11 }} />
                     <RC.Bar dataKey="Ingresos" fill="#94a3b8" radius={[4, 4, 0, 0]} />
                     <RC.Bar dataKey="Costo" fill="#fb923c" radius={[4, 4, 0, 0]} />
-                    <RC.Bar dataKey="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                    <RC.Bar dataKey="Gastos operativos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                    <RC.Bar dataKey="Compras" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                     <RC.Bar dataKey="Resultado" fill="#14b8a6" radius={[4, 4, 0, 0]} />
                   </RC.BarChart>
                 </RC.ResponsiveContainer>
@@ -324,13 +335,16 @@ export default function Reports() {
                     const totalG = top.gastos.reduce((s2, x) => s2 + x.monto, 0);
                     const porcentaje = totalG > 0 ? (g.monto / totalG) * 100 : 0;
                     return (
-                      <div key={g.nombre}>
+                      <div key={`${g.tipo}-${g.nombre}`}>
                         <div className="flex justify-between items-baseline text-sm mb-1">
-                          <span className="text-slate-600 truncate">{g.nombre}</span>
+                          <span className="text-slate-600 truncate">
+                            {g.nombre}
+                            {g.tipo === "compra" && <span className="ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">Compra</span>}
+                          </span>
                           <span className="font-bold shrink-0 ml-2">{fmt(g.monto)}</span>
                         </div>
                         <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-amber-500" style={{ width: `${porcentaje}%` }} />
+                          <div className={`h-full rounded-full ${g.tipo === "compra" ? "bg-violet-500" : "bg-amber-500"}`} style={{ width: `${porcentaje}%` }} />
                         </div>
                         <p className="text-[11px] text-slate-400 mt-0.5">{g.cantidad} gasto(s) · {porcentaje.toFixed(0)}%</p>
                       </div>

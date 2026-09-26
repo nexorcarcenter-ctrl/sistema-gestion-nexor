@@ -138,10 +138,10 @@ function AppRoutes() {
                 <Route path="/stock-movements" element={<StockMovements />} />
                 <Route path="/remitos" element={<Remitos />} />
                 <Route path="/new-remito" element={<NewRemito />} />
-                <Route path="/purchase-orders" element={<ComingSoonGuard><PurchaseOrders /></ComingSoonGuard>} />
-                <Route path="/purchase-order-detail" element={<ComingSoonGuard><PurchaseOrderDetail /></ComingSoonGuard>} />
-                <Route path="/new-purchase-order" element={<ComingSoonGuard><NewPurchaseOrder /></ComingSoonGuard>} />
-                <Route path="/suppliers" element={<ComingSoonGuard><Suppliers /></ComingSoonGuard>} />
+                <Route path="/purchase-orders" element={<ComingSoonGuard permiso="gestionarCompras"><PurchaseOrders /></ComingSoonGuard>} />
+                <Route path="/purchase-order-detail" element={<ComingSoonGuard permiso="gestionarCompras"><PurchaseOrderDetail /></ComingSoonGuard>} />
+                <Route path="/new-purchase-order" element={<ComingSoonGuard permiso="gestionarCompras"><NewPurchaseOrder /></ComingSoonGuard>} />
+                <Route path="/suppliers" element={<ComingSoonGuard permiso="gestionarCompras"><Suppliers /></ComingSoonGuard>} />
                 <Route path="/service-types" element={<ServiceTypes />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/cash-register" element={<CashRegister />} />

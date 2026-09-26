@@ -4,16 +4,25 @@ import { Expense } from "@/entities/Expense";
 import { ExpenseCategory } from "@/entities/ExpenseCategory";
 import { PaymentMethod } from "@/entities/PaymentMethod";
 import User from "@/entities/User";
-import { puedeDarDeBaja } from "@/permissions";
+import { puedeDarDeBaja, puede } from "@/permissions";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, CopyPlus, Edit2, Trash2, Receipt, Repeat } from "lucide-react";
+import { Plus, CopyPlus, Edit2, Trash2, Receipt, Repeat, Truck } from "lucide-react";
 import ExpenseForm from "../components/ExpenseForm";
 import PeriodPicker from "../components/PeriodPicker";
 import { rangoDelPeriodo } from "@/entities/Report";
 import moment from "moment";
 
 const fmt = (n) => `$${Math.round(Number(n) || 0).toLocaleString("es-UY")}`;
+const esCompra = (g) => g.expense_type === "compra";
+
+const TIPOS = [
+  { valor: "todos", etiqueta: "Todos" },
+  { valor: "operativo", etiqueta: "Operativos" },
+  { valor: "compra", etiqueta: "Compras" },
+];
 
 export default function Expenses() {
   const qc = useQueryClient();
@@ -22,6 +31,7 @@ export default function Expenses() {
   const [formAbierto, setFormAbierto] = useState(false);
   const [editando, setEditando] = useState(null);
   const [aviso, setAviso] = useState("");
+  const [tipo, setTipo] = useState("todos");
 
   const periodo = rango || rangoDelPeriodo(period);
 
@@ -51,16 +61,25 @@ export default function Expenses() {
     return f >= periodo.from && f <= periodo.to;
   }), [gastos, periodo.from, periodo.to]);
 
-  const total = delPeriodo.reduce((s, g) => s + (Number(g.amount_uyu) || 0), 0);
+  // Los subtotales se calculan siempre sobre todo el período, sin importar el
+  // filtro: el punto es ver de un vistazo cuánto es de cada tipo.
+  const suma = (lista) => lista.reduce((s, g) => s + (Number(g.amount_uyu) || 0), 0);
+  const totalCompras = suma(delPeriodo.filter(esCompra));
+  const totalOperativos = suma(delPeriodo) - totalCompras;
+
+  const visibles = useMemo(() => delPeriodo.filter((g) =>
+    tipo === "todos" || (tipo === "compra" ? esCompra(g) : !esCompra(g))
+  ), [delPeriodo, tipo]);
+  const total = suma(visibles);
 
   const porCategoria = useMemo(() => {
     const m = {};
-    for (const g of delPeriodo) {
+    for (const g of visibles) {
       const k = g.category_name || "Sin categoría";
       m[k] = (m[k] || 0) + (Number(g.amount_uyu) || 0);
     }
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
-  }, [delPeriodo]);
+  }, [visibles]);
 
   const guardar = useMutation({
     mutationFn: async (datos) => {
@@ -122,6 +141,7 @@ export default function Expenses() {
   });
 
   const puedeBorrar = puedeDarDeBaja(usuario?.role, "expenses");
+  const veCompras = puede(usuario?.role, "gestionarCompras");
 
   return (
     <div className="space-y-6">
@@ -142,7 +162,11 @@ export default function Expenses() {
           <CardContent className="p-5">
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total del período</p>
             <p className="text-3xl font-bold text-[#E8461E] mt-1">{fmt(total)}</p>
-            <p className="text-xs text-slate-500 mt-1">{delPeriodo.length} gasto(s)</p>
+            <p className="text-xs text-slate-500 mt-1">{visibles.length} gasto(s)</p>
+            <div className="mt-3 space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-slate-500">Gastos operativos</span><span className="font-semibold text-slate-700">{fmt(totalOperativos)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Compras de mercadería</span><span className="font-semibold text-violet-700">{fmt(totalCompras)}</span></div>
+            </div>
             <div className="flex gap-2 mt-4">
               <Button className="flex-1 bg-[#E8461E] hover:bg-[#c73a15]" onClick={() => { setEditando(null); setFormAbierto(true); }}>
                 <Plus className="h-4 w-4 mr-1" />Nuevo gasto
@@ -184,18 +208,30 @@ export default function Expenses() {
         </Card>
       </div>
 
+      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+        {TIPOS.map((x) => (
+          <button
+            key={x.valor}
+            onClick={() => setTipo(x.valor)}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${tipo === x.valor ? "bg-white shadow-sm font-medium text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            {x.etiqueta}
+          </button>
+        ))}
+      </div>
+
       <Card className="border-0 shadow-sm">
         <CardContent className="p-0">
           {isLoading ? (
             <p className="text-center py-12 text-slate-400">Cargando…</p>
-          ) : delPeriodo.length === 0 ? (
+          ) : visibles.length === 0 ? (
             <div className="text-center py-12">
               <Receipt className="h-8 w-8 text-slate-300 mx-auto mb-2" />
               <p className="text-sm text-slate-400">No hay gastos cargados en este período</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {delPeriodo.map((g) => (
+              {visibles.map((g) => (
                 <div key={g.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -203,6 +239,9 @@ export default function Expenses() {
                         {g.description || g.category_name || "Sin detalle"}
                       </p>
                       {g.is_fixed && <Repeat className="h-3 w-3 text-slate-400 shrink-0" title="Se repite todos los meses" />}
+                      {esCompra(g) && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 shrink-0">Compra</span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-400 truncate">
                       {[
@@ -220,6 +259,20 @@ export default function Expenses() {
                       <p className="text-[11px] text-slate-400">US$ {Number(g.amount).toLocaleString("es-UY")}</p>
                     )}
                   </div>
+                  {esCompra(g) ? (
+                    // El gasto de una compra se cambia desde la compra: así stock, costo y gasto no se desfasan
+                    <div className="flex gap-1 shrink-0">
+                      {veCompras && g.purchase_order_id && (
+                        <Link
+                          to={createPageUrl("PurchaseOrderDetail") + "?id=" + g.purchase_order_id}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-violet-700 hover:bg-violet-50"
+                          title="Ver la compra"
+                        >
+                          <Truck className="h-3.5 w-3.5" />
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
                   <div className="flex gap-1 shrink-0">
                     <button
                       onClick={() => { setEditando(g); setFormAbierto(true); }}
@@ -238,6 +291,7 @@ export default function Expenses() {
                       </button>
                     )}
                   </div>
+                  )}
                 </div>
               ))}
             </div>

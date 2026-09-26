@@ -76,8 +76,11 @@ async function totales(desde, hasta) {
   `, [desde, hasta]);
 
   // Los gastos de la empresa no dependen de las ventas, van por su cuenta
+  // Se separan los operativos de las compras de mercaderia: los dos restan,
+  // pero hay que poder ver cuanto es cada cosa.
   const { rows: filasGastos } = await pool.query(`
-    SELECT COALESCE(SUM(amount_uyu), 0) AS gastos
+    SELECT COALESCE(SUM(amount_uyu), 0) AS gastos,
+           COALESCE(SUM(amount_uyu) FILTER (WHERE expense_type = 'compra'), 0) AS compras
     FROM expenses
     WHERE expense_date >= $1::date AND expense_date <= $2::date
   `, [desde, hasta]);
@@ -88,6 +91,7 @@ async function totales(desde, hasta) {
   const ingresosProductos = Number(r.ingresos_productos) || 0;
   const costoProductos    = Number(r.costo_productos) || 0;
   const gastos            = Number(filasGastos[0]?.gastos) || 0;
+  const compras           = Number(filasGastos[0]?.compras) || 0;
 
   // La mano de obra es ganancia pura: no se le imputa costo.
   // Se calcula por diferencia para no perder las ventas sin ítems cargados.
@@ -108,6 +112,8 @@ async function totales(desde, hasta) {
     utilidad,
     margen: ingresos > 0 ? (utilidad / ingresos) * 100 : 0,
     gastos,
+    gastos_operativos: gastos - compras,
+    compras,
     resultado_neto: resultadoNeto,
     margen_neto: ingresos > 0 ? (resultadoNeto / ingresos) * 100 : 0,
     ticket_promedio: ventas > 0 ? ingresos / ventas : 0,
@@ -193,7 +199,8 @@ router.get("/timeseries", async (req, res) => {
         SELECT mes, SUM(total) AS ingresos, COUNT(*) AS ventas FROM v GROUP BY mes
       ),
       gastos AS (
-        SELECT date_trunc('month', expense_date) AS mes, SUM(amount_uyu) AS gastos
+        SELECT date_trunc('month', expense_date) AS mes, SUM(amount_uyu) AS gastos,
+               COALESCE(SUM(amount_uyu) FILTER (WHERE expense_type = 'compra'), 0) AS compras
         FROM expenses
         WHERE expense_date >= date_trunc('month', CURRENT_DATE) - make_interval(months => $1::int - 1)
         GROUP BY 1
@@ -204,6 +211,7 @@ router.get("/timeseries", async (req, res) => {
         COALESCE(c.costo, 0)                     AS costo,
         COALESCE(i.ingresos, 0) - COALESCE(c.costo, 0) AS utilidad,
         COALESCE(g.gastos, 0)                    AS gastos,
+        COALESCE(g.compras, 0)                   AS compras,
         COALESCE(i.ingresos, 0) - COALESCE(c.costo, 0) - COALESCE(g.gastos, 0) AS resultado,
         COALESCE(i.ventas, 0)                    AS ventas
       FROM meses m
@@ -219,6 +227,7 @@ router.get("/timeseries", async (req, res) => {
       costo: Number(r.costo) || 0,
       utilidad: Number(r.utilidad) || 0,
       gastos: Number(r.gastos) || 0,
+      compras: Number(r.compras) || 0,
       resultado: Number(r.resultado) || 0,
       ventas: Number(r.ventas) || 0,
     })));
@@ -275,11 +284,12 @@ router.get("/top", async (req, res) => {
 
     const { rows: gastos } = await pool.query(`
       SELECT COALESCE(NULLIF(category_name, ''), 'Sin categoría') AS nombre,
+             CASE WHEN expense_type = 'compra' THEN 'compra' ELSE 'operativo' END AS tipo,
              SUM(amount_uyu) AS monto,
              COUNT(*)        AS cantidad
       FROM expenses
       WHERE expense_date >= $1::date AND expense_date <= $2::date
-      GROUP BY 1
+      GROUP BY 1, 2
       ORDER BY monto DESC
     `, [from, to]);
 

@@ -44,6 +44,9 @@ app.use("/api/stock", authMiddleware, require("./routes/stock"));
 // Sequence routes (protected)
 app.use("/api/sequence", authMiddleware, require("./routes/sequence"));
 
+// Compra directa (protected): registra compra, stock, costo y gasto juntos
+app.use("/api/purchases", authMiddleware, require("./routes/purchases"));
+
 // Reports routes (protected, solo admin)
 app.use("/api/reports", authMiddleware, require("./routes/reports"));
 

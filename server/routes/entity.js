@@ -41,8 +41,34 @@ router.use("/:entity", (req, res, next) => {
   next();
 });
 
+// Las compras tocan stock, costos, gastos y proveedores a la vez: si se
+// escribieran por aca, una falla a mitad de camino dejaria el stock sumado sin
+// gasto o al reves. Por eso solo se escriben desde routes/purchases.js, dentro
+// de una transaccion. Lo mismo el gasto que genera cada compra: se cambia
+// editando o anulando la compra, nunca suelto.
+router.use("/:entity/:id?", async (req, res, next) => {
+  if (req.method === "GET") return next();
+  const table = getTable(req.params.entity);
+  if (table === "purchase_orders") {
+    return res.status(409).json({ error: "Las compras se registran, editan o anulan desde Compra Directa" });
+  }
+  if (table === "expenses" && req.params.id && req.params.id !== "bulk") {
+    try {
+      const { rows } = await pool.query("SELECT purchase_order_id FROM expenses WHERE id = $1", [req.params.id]);
+      if (rows[0]?.purchase_order_id) {
+        return res.status(409).json({ error: "Este gasto viene de una compra: se modifica editando o anulando la compra" });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  next();
+});
+
 // Whitelist de columnas válidas por tabla (previene SQL injection)
 const VALID_COLUMNS = new Set([
+  // Compra directa
+  "expense_type", "purchase_order_id", "invoice_number", "expense_id", "total_uyu",
   // Gastos de la empresa
   "expense_date", "category_id", "category_name", "amount_uyu", "is_fixed",
   "payment_method_id", "payment_method_name", "created_by_name",
