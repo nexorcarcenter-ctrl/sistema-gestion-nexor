@@ -7,7 +7,7 @@ import { puede, etiquetaDeRol } from "@/permissions";
 import {
   LayoutDashboard, ShoppingCart, Receipt, Package, Truck,
   BarChart3, TrendingUp, Users, ArrowLeftRight, FolderOpen, Wrench, ClipboardList, Wallet,
-  LayoutGrid, FileText, CreditCard, Menu, X, LogOut, PlusCircle, Plus, CalendarDays
+  LayoutGrid, FileText, CreditCard, Menu, X, LogOut, PlusCircle, Plus, CalendarDays, HandCoins
 } from "lucide-react";
 
 
@@ -24,7 +24,7 @@ function buildNavSections(rol) {
   return [
     { label: "overview", items: [{ key: "dashboard", icon: LayoutDashboard, page: "Dashboard" }] },
     { label: "tallerSection", items: [{ key: "workshopBoard", icon: LayoutGrid, page: "WorkshopBoard" }, { key: "serviceOrders", icon: ClipboardList, page: "ServiceOrders" }, { key: "newServiceOrder", icon: PlusCircle, page: "NewServiceOrder" }, { key: "agenda", icon: CalendarDays, page: "Agenda" }] },
-    { label: "ventasSection", items: [{ key: "pos", icon: ShoppingCart, page: "PointOfSale" }, { key: "newSaleDirect", icon: Plus, page: "NewSale" }, { key: "sales", icon: Receipt, page: "Sales" }] },
+    { label: "ventasSection", items: [{ key: "pos", icon: ShoppingCart, page: "PointOfSale" }, { key: "newSaleDirect", icon: Plus, page: "NewSale" }, { key: "sales", icon: Receipt, page: "Sales" }, { key: "receivables", icon: HandCoins, page: "Receivables" }] },
     { label: "inventarioSection", items: [{ key: "products", icon: Package, page: "Products" }, { key: "categories", icon: FolderOpen, page: "Categories" }, { key: "movements", icon: ArrowLeftRight, page: "StockMovements" }, { key: "remitos", icon: FileText, page: "Remitos" }] },
     { label: "comprasSection", items: [{ key: "purchaseOrders", icon: Truck, page: "PurchaseOrders" }, { key: "suppliers", icon: Users, page: "Suppliers" }] },
     { label: "configSection", items: [{ key: "serviceTypes", icon: Wrench, page: "ServiceTypes" }, { key: "paymentMethods", icon: CreditCard, page: "PaymentMethods" }, { key: "cashRegister", icon: Wallet, page: "CashRegister" }, { key: "expenses", icon: Receipt, page: "Expenses" }] },

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { estadoCobro, fmtPesos } from "../components/creditFormat";
 import { createPageUrl } from "@/utils";
 import { Sale } from "@/entities/Sale";
 import { PaymentMethod } from "@/entities/PaymentMethod";
@@ -205,7 +206,15 @@ export default function Sales() {
                             {sale.sale_type === "with_service" && (
                               <span className="text-[10px] bg-[#E8461E]/10 text-[#c73a15] px-1.5 py-0.5 rounded-full font-medium">Servicio</span>
                             )}
+                            {estadoCobro(sale) && (
+                              <Link to={createPageUrl("SaleDetail") + "?id=" + sale.id} onClick={(e) => e.stopPropagation()} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium hover:underline ${estadoCobro(sale).clase}`}>
+                                Crédito · {estadoCobro(sale).etiqueta}
+                              </Link>
+                            )}
                           </div>
+                          {sale.payment_type === "credito" && sale.payment_status !== "paid" && (
+                            <p className="text-[10px] text-red-600">debe {fmtPesos(Number(sale.total) - Number(sale.paid_amount || 0))}</p>
+                          )}
                           {sale.service_order_number && (
                             <p className="text-[10px] text-slate-400">Orden #{sale.service_order_number}</p>
                           )}

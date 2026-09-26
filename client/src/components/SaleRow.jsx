@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Receipt, ChevronRight } from "lucide-react";
 import StatusBadge from "./StatusBadge";
+import { estadoCobro, fmtPesos } from "./creditFormat";
 import moment from "moment";
 
 const fmt = (v) => `$${(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -26,6 +27,7 @@ export default function SaleRow({ sale }) {
         <div className="flex items-center gap-2">
           <p className="text-sm font-bold text-slate-900 font-mono">{sale.sale_number}</p>
           <StatusBadge status={sale.status} />
+          {estadoCobro(sale) && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${estadoCobro(sale).clase}`}>Crédito · {estadoCobro(sale).etiqueta}</span>}
         </div>
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-xs text-slate-500">{moment(sale.sale_date || sale.createdAt).format("D MMM, HH:mm")}</span>
@@ -34,9 +36,13 @@ export default function SaleRow({ sale }) {
       </div>
       <div className="text-right flex-shrink-0">
         <p className="text-sm font-bold text-slate-900">{fmt(sale.total)}</p>
-        <p className={`text-xs capitalize ${PAYMENT_ICONS[sale.payment_method] || "text-slate-400"}`}>
-          {sale.payment_method?.replace(/_/g, " ")}
-        </p>
+        {sale.payment_type === "credito" && sale.payment_status !== "paid" ? (
+          <p className="text-xs text-red-600">debe {fmtPesos(Number(sale.total) - Number(sale.paid_amount || 0))}</p>
+        ) : (
+          <p className={`text-xs capitalize ${PAYMENT_ICONS[sale.payment_method] || "text-slate-400"}`}>
+            {sale.payment_method?.replace(/_/g, " ")}
+          </p>
+        )}
       </div>
       <div className="text-xs text-slate-400 flex-shrink-0">
         {sale.items_count || 0} items

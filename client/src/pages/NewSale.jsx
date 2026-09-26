@@ -7,6 +7,11 @@ import { PaymentMethod } from "@/entities/PaymentMethod";
 import { CashRegister } from "@/entities/CashRegister";
 import { StockMovement } from "@/entities/StockMovement";
 import { getSequence } from "@/entities/base";
+import { Customer, Credito } from "@/entities/Customer";
+import { puede, rolDelToken } from "@/permissions";
+import ClienteForm from "../components/ClienteForm";
+import { PLAZOS_CREDITO } from "../components/purchaseFormat";
+import { fmtPesos } from "../components/creditFormat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, Search, Plus, Trash2, ShoppingCart,
   User, Car, Banknote, CreditCard, ArrowLeftRight,
-  FileCheck, MoreHorizontal, AlertCircle, Check
+  FileCheck, MoreHorizontal, AlertCircle, Check, CalendarClock, X
 } from "lucide-react";
 
 const TYPE_ICONS = {
@@ -44,6 +49,16 @@ export default function NewSale() {
   const [payments, setPayments] = useState([]);
   const [exchangeRate, setExchangeRate] = useState(() => String(getDefaultExchangeRate()));
 
+  // Venta a crédito: cliente con ficha, plazo, y lo que se cobra ahora es una entrega
+  const puedeCredito = puede(rolDelToken(), "venderACredito");
+  const [condicion, setCondicion] = useState("contado");
+  const esCredito = condicion === "credito";
+  const [clientes, setClientes] = useState([]);
+  const [cliente, setCliente] = useState(null);
+  const [buscarCliente, setBuscarCliente] = useState("");
+  const [plazo, setPlazo] = useState(30);
+  const [nuevoCliente, setNuevoCliente] = useState(null);
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
@@ -66,7 +81,21 @@ export default function NewSale() {
       const todayReg = registers.find(r => (r.date || "").split("T")[0] === today);
       if (todayReg) setCashRegister(todayReg);
     }).catch(() => setError("Error al cargar datos"));
+    if (puedeCredito) Customer.conSaldo().then(setClientes).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const elegirCliente = (c) => {
+    setCliente(c);
+    setCustomerName(c.name);
+    setCustomerPhone(c.phone || "");
+    setPlazo(Number(c.credit_days) || 30);
+    setBuscarCliente("");
+  };
+  const qCliente = buscarCliente.toLowerCase().trim();
+  const clientesFiltrados = qCliente
+    ? clientes.filter((c) => c.name?.toLowerCase().includes(qCliente) || (c.phone || "").replace(/\D/g, "").includes(qCliente.replace(/\D/g, "") || "~") || (c.tax_id || "").includes(qCliente)).slice(0, 8)
+    : [];
 
   const filteredProducts = products.filter(p =>
     !productSearch ||
@@ -156,10 +185,38 @@ export default function NewSale() {
   const totalUSD = payments.filter(p => p.currency === "USD").reduce((s, p) => s + p.amount, 0);
   const change = totalPaidUYU - subtotal;
 
-  const canSave = cartItems.length > 0 && cartItems.every(i => i.product_name && i.unit_price >= 0) && totalPaidUYU >= subtotal && !!cashRegister;
+  const itemsOk = cartItems.length > 0 && cartItems.every(i => i.product_name && i.unit_price >= 0);
+  // A crédito: lo cobrado ahora no puede superar el total, y solo el efectivo necesita caja
+  const hayEfectivo = payments.some(p => p.type === "cash");
+  const canSave = esCredito
+    ? itemsOk && !!cliente && totalPaidUYU <= subtotal + 0.009 && (!hayEfectivo || !!cashRegister)
+    : itemsOk && totalPaidUYU >= subtotal && !!cashRegister;
+
+  const guardarACredito = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const venta = await Credito.vender({
+        customer_id: cliente.id,
+        credit_days: plazo,
+        vehicle,
+        notes,
+        items: cartItems.map(i => ({ product_id: i.product_id, product_name: i.product_name, sku: i.sku, quantity: i.quantity, unit_price: i.unit_price })),
+        pagos: payments.map(p => ({ method_id: p.method_id, amount: p.amount, exchange_rate: p.currency === "USD" ? parseFloat(exchangeRate) || 0 : 1 })),
+        cash_register_id: cashRegister?.id || null,
+      });
+      setSaved(true);
+      setTimeout(() => navigate(createPageUrl("SaleDetail") + "?id=" + venta.id), 900);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!canSave) return;
+    if (esCredito) return guardarACredito();
     setSaving(true);
 
     const saleNumber = await getSequence("sale");
@@ -248,16 +305,50 @@ export default function NewSale() {
           {/* Customer */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
             <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <User className="h-4 w-4 text-[#E8461E]" />Cliente y Vehículo <span className="text-xs text-slate-400 font-normal">(opcional)</span>
+              <User className="h-4 w-4 text-[#E8461E]" />Cliente y Vehículo <span className="text-xs text-slate-400 font-normal">{esCredito ? "(el cliente es obligatorio a crédito)" : "(opcional)"}</span>
             </h3>
+            {esCredito && (
+              <div className="mb-3">
+                {cliente ? (
+                  <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{cliente.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {[cliente.phone, cliente.tax_id].filter(Boolean).join(" · ") || "Sin datos de contacto"}
+                        {cliente.debe > 0 && <span className={cliente.vencido > 0 ? "text-red-600 font-medium" : "text-amber-700"}> · ya debe {fmtPesos(cliente.debe)}{cliente.vencido > 0 ? " (con vencido)" : ""}</span>}
+                      </p>
+                    </div>
+                    <button onClick={() => { setCliente(null); setCustomerName(""); setCustomerPhone(""); }} className="text-slate-400 hover:text-slate-600 p-1"><X className="h-4 w-4" /></button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <Input value={buscarCliente} onChange={e => setBuscarCliente(e.target.value)} placeholder="Buscar cliente por nombre, teléfono o RUT…" className="pl-9 h-9" />
+                    {qCliente && (
+                      <div className="absolute z-10 top-full left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-56 overflow-y-auto">
+                        {clientesFiltrados.map(c => (
+                          <button key={c.id} onClick={() => elegirCliente(c)} className="w-full text-left px-3 py-2 hover:bg-[#E8461E]/5 flex items-center justify-between text-sm border-b border-slate-50">
+                            <span><span className="font-medium text-slate-800">{c.name}</span> <span className="text-xs text-slate-400">{c.phone}</span></span>
+                            {c.debe > 0 && <span className="text-xs text-amber-700">debe {fmtPesos(c.debe)}</span>}
+                          </button>
+                        ))}
+                        <button onClick={() => setNuevoCliente(buscarCliente.trim())} className="w-full text-left px-3 py-2 text-sm text-[#E8461E] font-medium hover:bg-orange-50 flex items-center gap-2">
+                          <Plus className="h-4 w-4" />Crear cliente «{buscarCliente.trim()}»
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Nombre del cliente</Label>
-                <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Ej: Juan García" className="mt-1 h-9" />
+                <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Ej: Juan García" className="mt-1 h-9" disabled={esCredito} />
               </div>
               <div>
                 <Label className="text-xs">Teléfono</Label>
-                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Ej: 099 123 456" className="mt-1 h-9" />
+                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Ej: 099 123 456" className="mt-1 h-9" disabled={esCredito} />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs flex items-center gap-1"><Car className="h-3 w-3" />Vehículo</Label>
@@ -372,8 +463,24 @@ export default function NewSale() {
         {/* Right: Payment */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            {puedeCredito && (
+              <div className="flex gap-1 bg-slate-100 rounded-lg p-1 mb-3">
+                {[["contado", "Contado"], ["credito", "A crédito"]].map(([v, e]) => (
+                  <button key={v} onClick={() => setCondicion(v)} className={`flex-1 py-1.5 text-sm rounded-md ${condicion === v ? "bg-white shadow-sm font-medium text-slate-900" : "text-slate-500"}`}>{e}</button>
+                ))}
+              </div>
+            )}
+            {esCredito && (
+              <div className="mb-3">
+                <Label className="text-xs flex items-center gap-1"><CalendarClock className="h-3 w-3" />Plazo</Label>
+                <select value={plazo} onChange={e => setPlazo(Number(e.target.value))} className="mt-1 w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-sm">
+                  {[...new Set([...PLAZOS_CREDITO, plazo])].sort((a, b) => a - b).map(d => <option key={d} value={d}>{d} días</option>)}
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1">Vence el {new Date(Date.now() + plazo * 86400000).toLocaleDateString("es-UY")}. Cuenta como ingreso a medida que se cobra.</p>
+              </div>
+            )}
             <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <Banknote className="h-4 w-4 text-[#E8461E]" />Cobro
+              <Banknote className="h-4 w-4 text-[#E8461E]" />{esCredito ? "Entrega inicial (opcional)" : "Cobro"}
             </h3>
 
             {/* UYU */}
@@ -458,13 +565,24 @@ export default function NewSale() {
                 <span className="text-slate-500">Total cobrado</span>
                 <span className="font-bold text-[#c73a15]">{fmtUYU(totalPaidUYU)}</span>
               </div>
-              {change > 0 && (
+              {esCredito && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Queda debiendo</span>
+                  <span className="font-bold text-amber-700">{fmtPesos(Math.max(subtotal - totalPaidUYU, 0))}</span>
+                </div>
+              )}
+              {esCredito && totalPaidUYU > subtotal + 0.009 && (
+                <div className="flex items-center gap-1.5 text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" />A crédito no hay vuelto: la entrega no puede superar el total
+                </div>
+              )}
+              {!esCredito && change > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-500">Vuelto</span>
                   <span className="font-bold text-amber-600">{fmtUYU(change)}</span>
                 </div>
               )}
-              {totalPaidUYU < subtotal && totalPaidUYU > 0 && (
+              {!esCredito && totalPaidUYU < subtotal && totalPaidUYU > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
                   <AlertCircle className="h-3.5 w-3.5" />
                   Falta cobrar {fmtUYU(subtotal - totalPaidUYU)}
@@ -472,7 +590,7 @@ export default function NewSale() {
               )}
             </div>
 
-            {!cashRegister && (
+            {!cashRegister && (!esCredito || hayEfectivo) && (
               <div className="mt-3 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                 <div>
@@ -493,12 +611,18 @@ export default function NewSale() {
               ) : saving ? (
                 "Guardando..."
               ) : (
-                <><ShoppingCart className="h-4 w-4 mr-2" />Confirmar Venta</>
+                <><ShoppingCart className="h-4 w-4 mr-2" />{esCredito ? "Confirmar venta a crédito" : "Confirmar Venta"}</>
               )}
             </Button>
           </div>
         </div>
       </div>
+      <ClienteForm
+        abierto={nuevoCliente !== null}
+        nombreInicial={nuevoCliente || ""}
+        onClose={() => setNuevoCliente(null)}
+        onGuardado={(c) => { const conSaldo = { ...c, debe: 0, vencido: 0 }; setClientes(l => [...l, conSaldo]); elegirCliente(conSaldo); }}
+      />
     </div>
   );
 }

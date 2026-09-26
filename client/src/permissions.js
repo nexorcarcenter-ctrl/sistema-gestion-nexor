@@ -7,9 +7,9 @@
  */
 
 const PERMISOS = {
-  admin:   { verReportes: true,  verGastos: true,  gestionarUsuarios: true,  verModulosEnConstruccion: true,  gestionarCompras: true,  archivar: "*",           eliminar: "*" },
-  gerente: { verReportes: true,  verGastos: true,  gestionarUsuarios: false, verModulosEnConstruccion: false, gestionarCompras: true,  archivar: ["products", "suppliers"], eliminar: ["expenses"] },
-  user:    { verReportes: false, verGastos: false, gestionarUsuarios: false, verModulosEnConstruccion: false, gestionarCompras: false, archivar: [],            eliminar: [] },
+  admin:   { verReportes: true,  verGastos: true,  gestionarUsuarios: true,  verModulosEnConstruccion: true,  gestionarCompras: true,  venderACredito: true,  archivar: "*",           eliminar: "*" },
+  gerente: { verReportes: true,  verGastos: true,  gestionarUsuarios: false, verModulosEnConstruccion: false, gestionarCompras: true,  venderACredito: true,  archivar: ["products", "suppliers", "customers"], eliminar: ["expenses"] },
+  user:    { verReportes: false, verGastos: false, gestionarUsuarios: false, verModulosEnConstruccion: false, gestionarCompras: false, venderACredito: false, archivar: [],            eliminar: [] },
 };
 
 const ROL_POR_DEFECTO = "user";

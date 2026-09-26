@@ -133,10 +133,16 @@ export default function Reports() {
               <CardContent>
                 <table className="w-full text-sm">
                   <tbody>
-                    <tr className="border-b border-slate-100">
-                      <td className="py-2 text-slate-600">{t("totalRevenue")}</td>
+                    <tr className={a.cobros_credito > 0 ? "" : "border-b border-slate-100"}>
+                      <td className="py-2 text-slate-600">Ingresos cobrados</td>
                       <td className="py-2 text-right font-semibold tabular-nums">{fmt(a.ingresos)}</td>
                     </tr>
+                    {a.cobros_credito > 0 && (
+                      <tr className="border-b border-slate-100">
+                        <td className="py-1 pb-2 text-xs text-slate-400 pl-8">de ellos, cobros de ventas a crédito</td>
+                        <td className="py-1 pb-2 text-right text-xs text-slate-500 tabular-nums">{fmt(a.cobros_credito)}</td>
+                      </tr>
+                    )}
                     <tr>
                       <td className="py-2 text-slate-500 pl-4">− Gastos operativos</td>
                       <td className="py-2 text-right text-amber-700 tabular-nums">{fmt(a.gastos_operativos)}</td>
@@ -172,6 +178,13 @@ export default function Reports() {
                   Las compras restan en el resultado cuando se pagan. Si un mes se repone mucho stock el resultado baja,
                   pero esa plata queda acá, en mercadería para vender.
                 </p>
+                {inv?.a_cobrar > 0 && (
+                  <div className="mt-4 pt-3 border-t">
+                    <p className="text-xs text-slate-500">Clientes te deben</p>
+                    <p className="text-lg font-bold text-amber-600">{fmt(inv.a_cobrar)}</p>
+                    <p className="text-[11px] text-slate-400">ventas a crédito: suman al resultado cuando se cobran</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -213,7 +226,7 @@ export default function Reports() {
                   </tr>
                   <tr>
                     <td className="py-2.5 font-bold text-slate-800">Ganancia sobre lo vendido</td>
-                    <td className="py-2.5 text-right tabular-nums">{fmt(a.ingresos)}</td>
+                    <td className="py-2.5 text-right tabular-nums">{fmt(a.vendido ?? a.ingresos)}</td>
                     <td className="py-2.5 text-right tabular-nums text-slate-500">{fmt(a.costo_productos)}</td>
                     <td className="py-2.5 text-right text-lg font-bold tabular-nums text-emerald-700">{fmt(a.utilidad)}</td>
                     <td className="py-2.5 text-right tabular-nums font-semibold">{pct(a.margen)}</td>

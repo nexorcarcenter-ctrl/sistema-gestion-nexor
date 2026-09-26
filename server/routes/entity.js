@@ -24,6 +24,7 @@ const ENTITY_TABLES = {
   service_types: "service_types",
   stock_movements: "stock_movements",
   suppliers: "suppliers",
+  customers: "customers",
   expenses: "expenses",
   expense_categories: "expense_categories",
 };
@@ -51,6 +52,28 @@ router.use("/:entity/:id?", async (req, res, next) => {
   const table = getTable(req.params.entity);
   if (table === "purchase_orders") {
     return res.status(409).json({ error: "Las compras se registran, editan o anulan desde Compra Directa" });
+  }
+  // Ventas a credito y sus cobros: tocan saldo del cliente y caja a la vez,
+  // se escriben solo desde routes/credit.js
+  if (table === "sales" && req.params.id && req.params.id !== "bulk") {
+    try {
+      const { rows } = await pool.query("SELECT payment_type FROM sales WHERE id::text = $1", [req.params.id]);
+      if (rows[0]?.payment_type === "credito") {
+        return res.status(409).json({ error: "Las ventas a crédito se manejan desde Cuentas a cobrar" });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  if (table === "payments" && req.params.id && req.params.id !== "bulk") {
+    try {
+      const { rows } = await pool.query("SELECT sale_id FROM payments WHERE id::text = $1", [req.params.id]);
+      if (rows[0]?.sale_id) {
+        return res.status(409).json({ error: "Este cobro es de una venta a crédito: se maneja desde Cuentas a cobrar" });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
   if (table === "expenses" && req.params.id && req.params.id !== "bulk") {
     try {
@@ -96,8 +119,38 @@ router.use("/suppliers/:id?", async (req, res, next) => {
   next();
 });
 
+// Un cliente repetido parte en dos su cuenta: se busca por telefono, por
+// RUT/cedula y por nombre exacto entre los activos
+router.use("/customers/:id?", async (req, res, next) => {
+  if (!["POST", "PUT"].includes(req.method) || req.params.id === "bulk") return next();
+  const nombre = (req.body?.name || "").trim();
+  const tel = (req.body?.phone || "").replace(/\D/g, "");
+  const doc = (req.body?.tax_id || "").replace(/\D/g, "");
+  if (!nombre && !tel && !doc) return next();
+  try {
+    const { rows } = await pool.query(`
+      SELECT name, phone, tax_id FROM customers
+      WHERE is_active IS NOT FALSE
+        AND ($1::text IS NULL OR id::text <> $1)
+        AND ((LOWER(TRIM(name)) = LOWER($2) AND $2 <> '')
+          OR (length($3) >= 6 AND regexp_replace(COALESCE(phone, ''), '\\D', '', 'g') = $3)
+          OR (length($4) >= 6 AND regexp_replace(COALESCE(tax_id, ''), '\\D', '', 'g') = $4))
+      LIMIT 1
+    `, [req.params.id || null, nombre, tel, doc]);
+    if (rows[0]) {
+      return res.status(409).json({ error: `Ya existe el cliente ${rows[0].name}${rows[0].phone ? ` (${rows[0].phone})` : ""}` });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+  next();
+});
+
 // Whitelist de columnas válidas por tabla (previene SQL injection)
 const VALID_COLUMNS = new Set([
+  // Credito a clientes
+  "customer_id", "payment_type", "credit_days", "due_date", "paid_amount", "sale_id",
+  "payment_date", "customer_phone",
   // Compra directa
   "expense_type", "purchase_order_id", "invoice_number", "expense_id", "total_uyu",
   // Gastos de la empresa

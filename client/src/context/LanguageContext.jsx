@@ -99,7 +99,7 @@ const translations = {
   workshopBoard: "Tablero del Taller",
   serviceOrders: "Órdenes de Servicio",
   newServiceOrder: "Nueva Orden",
-  newSaleDirect: "Venta Directa",
+  newSaleDirect: "Venta Directa", receivables: "Cuentas a cobrar",
   remitos: "Remitos",
   serviceTypes: "Tipos de Servicio",
   cashRegister: "Caja",

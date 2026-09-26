@@ -65,6 +65,9 @@ app.post("/api/exchange-rate/refresh", authMiddleware, async (req, res) => {
 // Compra directa (protected): registra compra, stock, costo y gasto juntos
 app.use("/api/purchases", authMiddleware, require("./routes/purchases"));
 
+// Ventas a credito y cobros a clientes (protected)
+app.use("/api/credit", authMiddleware, require("./routes/credit"));
+
 // Reports routes (protected, solo admin)
 app.use("/api/reports", authMiddleware, require("./routes/reports"));
 

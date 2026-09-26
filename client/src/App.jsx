@@ -26,6 +26,7 @@ import PurchaseOrders from "./pages/PurchaseOrders";
 import PurchaseOrderDetail from "./pages/PurchaseOrderDetail";
 import NewPurchaseOrder from "./pages/NewPurchaseOrder";
 import Suppliers from "./pages/Suppliers";
+import Receivables from "./pages/Receivables";
 import ServiceTypes from "./pages/ServiceTypes";
 import PaymentMethods from "./pages/PaymentMethods";
 import CashRegister from "./pages/CashRegister";
@@ -133,6 +134,7 @@ function AppRoutes() {
                 <Route path="/new-sale" element={<NewSale />} />
                 <Route path="/sales" element={<Sales />} />
                 <Route path="/sale-detail" element={<SaleDetail />} />
+                <Route path="/receivables" element={<Receivables />} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/stock-movements" element={<StockMovements />} />

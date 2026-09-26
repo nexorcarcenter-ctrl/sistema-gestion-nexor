@@ -24,6 +24,8 @@ const ARCHIVABLES = {
   // Las compras guardan a quien se le compro: borrar el proveedor dejaria
   // el historial y la comparacion de precios con un nombre huerfano
   suppliers:       { columna: "is_active", valorArchivado: false },
+  // Igual que los proveedores: tienen ventas y cobros que el historial referencia
+  customers:       { columna: "is_active", valorArchivado: false },
 };
 
 const PERMISOS = {
@@ -33,6 +35,7 @@ const PERMISOS = {
     gestionarUsuarios: true,
     verModulosEnConstruccion: true,
     gestionarCompras: true,
+    venderACredito: true,
     archivar: "*",
     eliminar: "*",
   },
@@ -44,7 +47,9 @@ const PERMISOS = {
     verModulosEnConstruccion: false,
     // El gerente es quien registra compras, pagos y proveedores
     gestionarCompras: true,
-    archivar: ["products", "suppliers"],
+    // Dejar una venta sin cobrar es una decision del gerente, no del mostrador
+    venderACredito: true,
+    archivar: ["products", "suppliers", "customers"],
     eliminar: ["expenses"],
   },
   user: {
@@ -53,6 +58,7 @@ const PERMISOS = {
     gestionarUsuarios: false,
     verModulosEnConstruccion: false,
     gestionarCompras: false,
+    venderACredito: false,
     archivar: [],
     eliminar: [],
   },

@@ -18,7 +18,7 @@ router.use(requiereVerReportes);
 // plata de las ventas que quedaron sin detalle de ítems cargado.
 const CTE_BASE = `
   WITH v AS (
-    SELECT s.id, s.total, s.items_json, s.payments_json
+    SELECT s.id, s.total, s.items_json, s.payments_json, s.payment_type
     FROM sales s
     WHERE s.status = 'completed'
       AND COALESCE(s.sale_date, s.created_at) >= $1::date
@@ -52,6 +52,8 @@ const CTE_BASE = `
     FROM items i
     JOIN service_types st ON st.id::text = i.item->>'product_id'
   ),
+  -- Lo cobrado por forma de pago: las ventas de contado el dia de la venta,
+  -- las ventas a credito el dia de cada cobro
   pagos AS (
     SELECT
       COALESCE(NULLIF(e->>'method_name', ''), 'Sin especificar') AS nombre,
@@ -61,6 +63,13 @@ const CTE_BASE = `
       CASE WHEN v.payments_json IS NULL OR v.payments_json = '' THEN '[]'::jsonb
            ELSE v.payments_json::jsonb END
     ) e
+    WHERE v.payment_type IS DISTINCT FROM 'credito'
+    UNION ALL
+    SELECT COALESCE(NULLIF(pm.payment_method_name, ''), 'Sin especificar'), COALESCE(pm.amount_uyu_equivalent, 0)
+    FROM payments pm
+    JOIN sales sc ON sc.id::text = pm.sale_id
+    WHERE sc.payment_type = 'credito' AND sc.status = 'completed'
+      AND pm.payment_date >= $1::date AND pm.payment_date <= $2::date
   )
 `;
 
@@ -70,7 +79,12 @@ async function totales(desde, hasta) {
     ${CTE_BASE}
     SELECT
       (SELECT COUNT(*)                 FROM v)    AS ventas,
-      (SELECT COALESCE(SUM(total),0)   FROM v)    AS ingresos,
+      (SELECT COALESCE(SUM(total),0)   FROM v)    AS vendido,
+      (SELECT COALESCE(SUM(total),0)   FROM v WHERE payment_type IS DISTINCT FROM 'credito') AS contado,
+      (SELECT COALESCE(SUM(pm.amount_uyu_equivalent),0)
+         FROM payments pm JOIN sales sc ON sc.id::text = pm.sale_id
+        WHERE sc.payment_type = 'credito' AND sc.status = 'completed'
+          AND pm.payment_date >= $1::date AND pm.payment_date <= $2::date) AS cobros_credito,
       (SELECT COALESCE(SUM(venta),0)   FROM prod) AS ingresos_productos,
       (SELECT COALESCE(SUM(costo),0)   FROM prod) AS costo_productos
   `, [desde, hasta]);
@@ -87,7 +101,12 @@ async function totales(desde, hasta) {
 
   const r = rows[0] || {};
   const ventas            = Number(r.ventas) || 0;
-  const ingresos          = Number(r.ingresos) || 0;
+  // Dos cifras distintas: lo vendido en el periodo (para la rentabilidad) y
+  // lo que efectivamente entro (para el resultado). Solo difieren por las
+  // ventas a credito, que ingresan a medida que se cobran.
+  const vendido           = Number(r.vendido) || 0;
+  const cobrosCredito     = Number(r.cobros_credito) || 0;
+  const ingresos          = (Number(r.contado) || 0) + cobrosCredito;
   const ingresosProductos = Number(r.ingresos_productos) || 0;
   const costoProductos    = Number(r.costo_productos) || 0;
   const gastos            = Number(filasGastos[0]?.gastos) || 0;
@@ -95,7 +114,7 @@ async function totales(desde, hasta) {
 
   // La mano de obra es ganancia pura: no se le imputa costo.
   // Se calcula por diferencia para no perder las ventas sin ítems cargados.
-  const ingresosServicios = Math.max(ingresos - ingresosProductos, 0);
+  const ingresosServicios = Math.max(vendido - ingresosProductos, 0);
 
   // El costo de la mercaderia se descuenta una sola vez: cuando se compra.
   // Las compras ya estan dentro de gastos (expense_type = 'compra'), asi que
@@ -104,23 +123,25 @@ async function totales(desde, hasta) {
   // La utilidad (venta menos costo de lo vendido) se sigue calculando, pero
   // es informativa: dice cuanto deja cada venta, no se vuelve a restar. Si se
   // restara ademas, la mercaderia quedaria contada dos veces.
-  const utilidad      = ingresos - costoProductos;
+  const utilidad      = vendido - costoProductos;
   const resultadoNeto = ingresos - gastos;
 
   return {
     ventas,
     ingresos,
+    vendido,
+    cobros_credito: cobrosCredito,
     ingresos_productos: ingresosProductos,
     ingresos_servicios: ingresosServicios,
     costo_productos: costoProductos,
     utilidad,
-    margen: ingresos > 0 ? (utilidad / ingresos) * 100 : 0,
+    margen: vendido > 0 ? (utilidad / vendido) * 100 : 0,
     gastos,
     gastos_operativos: gastos - compras,
     compras,
     resultado_neto: resultadoNeto,
     margen_neto: ingresos > 0 ? (resultadoNeto / ingresos) * 100 : 0,
-    ticket_promedio: ventas > 0 ? ingresos / ventas : 0,
+    ticket_promedio: ventas > 0 ? vendido / ventas : 0,
   };
 }
 
@@ -147,9 +168,13 @@ router.get("/summary", async (req, res) => {
   }
   try {
     const prev = periodoAnterior(from, to);
-    const [actual, anterior, inventario] = await Promise.all([
+    const [actual, anterior, aCobrar, inventario] = await Promise.all([
       totales(from, to),
       totales(prev.desde, prev.hasta),
+      pool.query(`
+        SELECT COALESCE(SUM(total - COALESCE(paid_amount, 0)), 0) AS a_cobrar
+        FROM sales WHERE payment_type = 'credito' AND status = 'completed' AND payment_status <> 'paid'
+      `).then(({ rows }) => Number(rows[0].a_cobrar) || 0),
       pool.query(`
         SELECT
           COUNT(*)                                                             AS productos,
@@ -163,7 +188,7 @@ router.get("/summary", async (req, res) => {
         stock_bajo: Number(rows[0].stock_bajo) || 0,
       })),
     ]);
-    res.json({ periodo: { desde: from, hasta: to }, actual, anterior, inventario });
+    res.json({ periodo: { desde: from, hasta: to }, actual, anterior, inventario: { ...inventario, a_cobrar: aCobrar } });
   } catch (err) {
     console.error("Reports summary error:", err);
     res.status(500).json({ error: "Error al calcular el resumen" });
@@ -184,7 +209,7 @@ router.get("/timeseries", async (req, res) => {
       ),
       v AS (
         SELECT date_trunc('month', COALESCE(s.sale_date, s.created_at)) AS mes,
-               s.id, s.total, s.items_json
+               s.id, s.total, s.items_json, s.payment_type
         FROM sales s
         WHERE s.status = 'completed'
           AND COALESCE(s.sale_date, s.created_at) >= date_trunc('month', CURRENT_DATE) - make_interval(months => $1::int - 1)
@@ -199,8 +224,21 @@ router.get("/timeseries", async (req, res) => {
         JOIN products p ON p.id::text = e.item->>'product_id'
         GROUP BY v.mes
       ),
+      vendidos AS (
+        SELECT mes, SUM(total) AS vendido FROM v GROUP BY mes
+      ),
+      -- Lo que entro cada mes: contado el mes de la venta, credito el mes del cobro
       ingresos AS (
-        SELECT mes, SUM(total) AS ingresos, COUNT(*) AS ventas FROM v GROUP BY mes
+        SELECT mes, SUM(ingresos) AS ingresos, SUM(ventas) AS ventas FROM (
+          SELECT mes, SUM(total) FILTER (WHERE payment_type IS DISTINCT FROM 'credito') AS ingresos, COUNT(*) AS ventas
+          FROM v GROUP BY mes
+          UNION ALL
+          SELECT date_trunc('month', pm.payment_date), SUM(pm.amount_uyu_equivalent), 0
+          FROM payments pm JOIN sales sc ON sc.id::text = pm.sale_id
+          WHERE sc.payment_type = 'credito' AND sc.status = 'completed'
+            AND pm.payment_date >= date_trunc('month', CURRENT_DATE) - make_interval(months => $1::int - 1)
+          GROUP BY 1
+        ) x GROUP BY mes
       ),
       gastos AS (
         SELECT date_trunc('month', expense_date) AS mes, SUM(amount_uyu) AS gastos,
@@ -213,7 +251,7 @@ router.get("/timeseries", async (req, res) => {
         to_char(m.mes, 'YYYY-MM')                AS mes,
         COALESCE(i.ingresos, 0)                  AS ingresos,
         COALESCE(c.costo, 0)                     AS costo,
-        COALESCE(i.ingresos, 0) - COALESCE(c.costo, 0) AS utilidad,
+        COALESCE(vd.vendido, 0) - COALESCE(c.costo, 0) AS utilidad,
         COALESCE(g.gastos, 0)                    AS gastos,
         COALESCE(g.compras, 0)                   AS compras,
         COALESCE(i.ingresos, 0) - COALESCE(g.gastos, 0) AS resultado,
@@ -221,6 +259,7 @@ router.get("/timeseries", async (req, res) => {
       FROM meses m
       LEFT JOIN ingresos i ON i.mes = m.mes
       LEFT JOIN costos   c ON c.mes = m.mes
+      LEFT JOIN vendidos vd ON vd.mes = m.mes
       LEFT JOIN gastos   g ON g.mes = m.mes
       ORDER BY m.mes
     `, [meses]);
