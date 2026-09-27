@@ -2,21 +2,18 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/entities/Product";
 import { Sale } from "@/entities/Sale";
-import { StockMovement } from "@/entities/StockMovement";
-import { getSequence } from "@/entities/base";
 import { Category } from "@/entities/Category";
 import { CashRegister } from "@/entities/CashRegister";
-import User from "@/entities/User.js";
 import { Search, ShoppingCart, Check, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CartItem from "../components/CartItem";
 import ProductGrid from "../components/ProductGrid";
-import PaymentDialog from "../components/PaymentDialog";
+import PosCobroDialog from "../components/PosCobroDialog";
 import { useLanguage } from "../context/LanguageContext";
 
-const fmt = (v) => `$${(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$ ${Math.round(Number(v) || 0).toLocaleString("es-UY")}`;
 function parseTiers(raw) { try { return JSON.parse(raw || "[]"); } catch { return []; } }
 function getDiscount(tiers, qty) {
   const sorted = [...tiers].sort((a, b) => b.min_qty - a.min_qty);
@@ -29,8 +26,10 @@ export default function PointOfSale() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState(""); const [categoryFilter, setCategoryFilter] = useState("all");
   const [cart, setCart] = useState([]);
-  const [showPayment, setShowPayment] = useState(false); const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [amountPaid, setAmountPaid] = useState(""); const [isProcessing, setIsProcessing] = useState(false); const [showSuccess, setShowSuccess] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); const [showSuccess, setShowSuccess] = useState(false);
+  const [errorCobro, setErrorCobro] = useState("");
+  const [ultimaVenta, setUltimaVenta] = useState(null);
   const [cashRegister, setCashRegister] = useState(null);
   const [cashRegisterLoaded, setCashRegisterLoaded] = useState(false);
 
@@ -43,11 +42,11 @@ export default function PointOfSale() {
       setCashRegisterLoaded(true);
     });
   }, []);
-  const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: () => Product.filter({ is_active: true, status: "active" }, "name", 500) });
+  const { data: products = [] } = useQuery({ queryKey: ["products", "pos"], queryFn: () => Product.filter({ is_active: true, status: "active" }, "name", 5000) });
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: () => Category.filter({ is_active: true }, "sort_order", 50) });
-  const { data: currentUser } = useQuery({ queryKey: ["currentUser"], queryFn: () => User.me() });
   const filtered = useMemo(() => products.filter((p) => {
-    const ms = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const ms = !search || p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q);
     return ms && (categoryFilter === "all" || p.category === categoryFilter) && p.stock_quantity > 0;
   }), [products, search, categoryFilter]);
 
@@ -72,40 +71,47 @@ export default function PointOfSale() {
   const subtotal = cart.reduce((sum, i) => sum + i.total, 0);
   const totalDiscount = cart.reduce((sum, i) => sum + (i.unit_price * i.quantity - i.total), 0);
   const total = subtotal;
-  const change = paymentMethod === "cash" && amountPaid ? Math.max(0, parseFloat(amountPaid) - total) : 0;
 
-  const completeSale = async () => {
+  // El lector de código de barras escribe el código y manda Enter: si hay un
+  // producto con ese código (o ese SKU) exacto, va directo al carrito
+  const alEnter = (e) => {
+    if (e.key !== "Enter") return;
+    const q = search.trim().toLowerCase();
+    if (!q) return;
+    const exacto = products.find((p) => (p.barcode || "").toLowerCase() === q || (p.sku || "").toLowerCase() === q);
+    const unico = filtered.length === 1 ? filtered[0] : null;
+    const elegido = exacto || unico;
+    if (elegido && elegido.stock_quantity > 0) { addToCart(elegido); setSearch(""); }
+  };
+
+  // Se guarda por la misma ruta que la venta directa: venta, stock, caja y
+  // arqueo en una sola transacción
+  const completeSale = async (pagos) => {
     setIsProcessing(true);
-    const saleNumber = await getSequence("pos_sale");
-    const cashier = currentUser?.fullName || currentUser?.username || "Unknown";
-    await Sale.create({
-      sale_number: saleNumber, sale_date: new Date().toISOString(), cashier,
-      items_json: JSON.stringify(cart.map((i) => ({ product_id: i.id, product_name: i.name, sku: i.sku, quantity: i.quantity, unit_price: i.unit_price, discount: i.discount_pct, total: i.total }))),
-      items_count: cart.reduce((s, i) => s + i.quantity, 0), subtotal, tax_amount: 0, discount_amount: totalDiscount, total,
-      payment_method: paymentMethod, payment_status: "paid", amount_paid: paymentMethod === "cash" ? parseFloat(amountPaid) || total : total, change_given: change, status: "completed",
-    });
-    // Update stock (atomic server-side)
-    const stockMovements = cart.map(item => ({
-      product_id: item.id,
-      movement_type: "sale",
-      quantity: -item.quantity,
-      reference_type: "sale",
-      reference_number: saleNumber,
-      reason: "POS Sale",
-    }));
-    if (stockMovements.length > 0) {
-      await StockMovement.moveBulk(stockMovements);
+    setErrorCobro("");
+    try {
+      const venta = await Sale.registrarContado({
+        origen: "pos",
+        items: cart.map((i) => ({ product_id: i.id, product_name: i.name, sku: i.sku, quantity: i.quantity, unit_price: i.unit_price, discount_pct: i.discount_pct || 0 })),
+        pagos,
+        cash_register_id: cashRegister?.id,
+      });
+      ["products", "sales", "stock-movements"].forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+      setUltimaVenta(venta);
+      setShowPayment(false); setShowSuccess(true);
+      setTimeout(() => { setShowSuccess(false); setCart([]); }, 2000);
+    } catch (e) {
+      setErrorCobro(e.message);
+    } finally {
+      setIsProcessing(false);
     }
-    queryClient.invalidateQueries({ queryKey: ["products"] }); queryClient.invalidateQueries({ queryKey: ["sales"] }); queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
-    setIsProcessing(false); setShowPayment(false); setShowSuccess(true);
-    setTimeout(() => { setShowSuccess(false); setCart([]); setAmountPaid(""); }, 2000);
   };
 
   return (
     <div className="flex flex-col md:flex-row gap-6 md:h-[calc(100vh-6rem)]">
       <div className="flex-1 flex flex-col">
         <div className="flex gap-3 mb-3">
-          <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder={t("searchProducts")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
+          <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder="Buscar por nombre, SKU o código de barras" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={alEnter} className="pl-9" autoFocus /></div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -120,7 +126,7 @@ export default function PointOfSale() {
         <div className="p-4 border-b"><div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-[#E8461E]" /><h2 className="font-semibold text-slate-900">{t("cart")}</h2><span className="ml-auto text-sm text-slate-500">{cart.length} {t("items")}</span></div></div>
         <div className="flex-1 overflow-y-auto p-4">{cart.length ? cart.map((item) => <CartItem key={item.id} item={item} onUpdateQty={updateQty} onRemove={removeItem} />) : <div className="flex flex-col items-center justify-center h-full text-slate-400"><ShoppingCart className="h-12 w-12 mb-2 opacity-30" /><p className="text-sm">{t("emptyCart")}</p></div>}</div>
         <div className="p-4 border-t bg-slate-50 rounded-b-xl space-y-2">
-          <div className="flex justify-between text-sm"><span className="text-slate-500">{t("subtotal")}</span><span>{fmt(subtotal)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-slate-500">{t("subtotal")}</span><span>{fmt(subtotal + totalDiscount)}</span></div>
           {totalDiscount > 0 && <div className="flex justify-between text-sm"><span className="text-emerald-600">{t("discount")}</span><span className="text-emerald-600">-{fmt(totalDiscount)}</span></div>}
           <div className="flex justify-between text-lg font-bold pt-2 border-t"><span>{t("total")}</span><span className="text-[#E8461E]">{fmt(total)}</span></div>
           {cashRegisterLoaded && !cashRegister && (
@@ -135,7 +141,11 @@ export default function PointOfSale() {
           <Button className="w-full bg-[#E8461E] hover:bg-[#c73a15] mt-3" disabled={!cart.length || !cashRegister} onClick={() => setShowPayment(true)}>{t("completeSale")}</Button>
         </div>
       </div>
-      <PaymentDialog open={showPayment} onOpenChange={setShowPayment} total={total} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} amountPaid={amountPaid} setAmountPaid={setAmountPaid} change={change} isProcessing={isProcessing} onConfirm={completeSale} />
+      <PosCobroDialog
+        abierto={showPayment} total={total} procesando={isProcessing} error={errorCobro}
+        onClose={() => { setShowPayment(false); setErrorCobro(""); }}
+        onConfirmar={completeSale}
+      />
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl p-10 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
@@ -143,7 +153,7 @@ export default function PointOfSale() {
               <Check className="h-10 w-10 text-emerald-600" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900">¡Venta Completada!</h2>
-            <p className="text-slate-500">Transacción procesada exitosamente</p>
+            <p className="text-slate-500">{ultimaVenta?.sale_number ? `${ultimaVenta.sale_number} · ${fmt(ultimaVenta.total)}` : "Transacción procesada exitosamente"}</p>
           </div>
         </div>
       )}

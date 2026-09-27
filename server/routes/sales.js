@@ -25,6 +25,8 @@ router.post("/direct", async (req, res) => {
 
     const lineas = leerItems(b.items);
     const total = redondear(lineas.reduce((s, i) => s + i.total, 0));
+    // Antes de los descuentos por volumen: subtotal - descuento = total
+    const subtotal = redondear(lineas.reduce((s, i) => s + i.quantity * i.unit_price, 0));
     const pagos = [];
     for (const p of (Array.isArray(b.pagos) ? b.pagos : [])) pagos.push(await leerMedioDePago(client, p));
     const cobrado = redondear(pagos.reduce((s, p) => s + p.enPesos, 0));
@@ -52,16 +54,16 @@ router.post("/direct", async (req, res) => {
     const dolares = redondear(pagos.filter((p) => p.moneda === "USD").reduce((s, p) => s + p.monto, 0));
     const { rows: [venta] } = await client.query(
       `INSERT INTO sales (sale_number, sale_date, sale_type, customer_name, customer_phone, vehicle, items_json, items_count,
-         payments_json, total_uyu, total_usd, total, subtotal, payment_type, paid_amount, payment_status, status,
-         cash_register_id, notes, cashier)
-       VALUES ($1, NOW(), 'direct', $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, 'contado', $10, 'paid', 'completed', $11, $12, $13)
+         payments_json, total_uyu, total_usd, total, subtotal, discount_amount, payment_type, paid_amount, payment_status,
+         status, cash_register_id, notes, cashier)
+       VALUES ($1, NOW(), 'direct', $2, $3, $4, $5, $6, $7, $8, $9, $10, $14, $15, 'contado', $10, 'paid', 'completed', $11, $12, $13)
        RETURNING *`,
       [numero, (b.customer_name || "").trim(), (b.customer_phone || "").trim(), (b.vehicle || "").trim(),
        JSON.stringify(lineas), lineas.length, JSON.stringify(pagosJson), cobrado, dolares, total, caja,
-       (b.notes || "").trim() || null, usuario.nombre]
+       (b.notes || "").trim() || null, usuario.nombre, subtotal, redondear(subtotal - total)]
     );
 
-    await descontarStock(client, lineas, numero, "Venta directa");
+    await descontarStock(client, lineas, numero, b.origen === "pos" ? "Punto de Venta" : "Venta directa");
 
     // Un pago de la caja por cada forma de pago, como hacen las ordenes
     const insertar = (monto, moneda, tipo, metodoId, metodoNombre, tc, enPesos, nota) => client.query(

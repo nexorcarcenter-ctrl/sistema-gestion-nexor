@@ -51,7 +51,8 @@ async function siguienteNumeroVenta(client) {
   return `V-${String(Number(rows[0].ultimo) + 1).padStart(6, "0")}`;
 }
 
-// Valida los items que manda la pantalla
+// Valida los items que manda la pantalla. discount_pct es el descuento por
+// volumen del producto (Punto de Venta): el total de la linea ya lo descuenta.
 function leerItems(lista) {
   const items = (Array.isArray(lista) ? lista : []).map((i) => ({
     product_id: i.product_id ? String(i.product_id) : "",
@@ -59,12 +60,18 @@ function leerItems(lista) {
     sku: i.sku || "",
     quantity: Number(i.quantity),
     unit_price: redondear(i.unit_price),
+    discount_pct: Number(i.discount_pct) || 0,
   }));
   if (!items.length) fallar(400, "Agregá al menos un producto");
   if (items.some((i) => !i.product_name)) fallar(400, "Hay un ítem sin descripción");
   if (items.some((i) => !Number.isInteger(i.quantity) || i.quantity <= 0)) fallar(400, "Las cantidades tienen que ser enteros mayores a cero");
   if (items.some((i) => i.unit_price < 0)) fallar(400, "Hay un precio negativo");
-  return items.map((i) => ({ ...i, total: redondear(i.quantity * i.unit_price) }));
+  if (items.some((i) => i.discount_pct < 0 || i.discount_pct >= 100)) fallar(400, "Hay un descuento inválido");
+  return items.map((i) => {
+    const linea = { ...i, total: redondear(i.quantity * i.unit_price * (1 - i.discount_pct / 100)) };
+    if (!linea.discount_pct) delete linea.discount_pct;
+    return linea;
+  });
 }
 
 // Descuenta el stock de lo vendido, con el mismo registro que routes/stock.js

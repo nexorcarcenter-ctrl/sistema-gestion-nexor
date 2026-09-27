@@ -1,7 +1,7 @@
 import { Minus, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const fmt = (v) => `$${(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$ ${(Math.round((Number(v) || 0) * 100) / 100).toLocaleString("es-UY")}`;
 
 export default function CartItem({ item, onUpdateQty, onRemove }) {
   const hasDiscount = item.discount_pct > 0;

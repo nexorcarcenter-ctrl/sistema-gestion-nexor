@@ -1,6 +1,6 @@
 import { Package, Percent } from "lucide-react";
 
-const fmt = (v) => `$${(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$ ${Math.round(Number(v) || 0).toLocaleString("es-UY")}`;
 function hasTiers(p) { try { return JSON.parse(p.volume_discounts || "[]").length > 0; } catch { return false; } }
 
 export default function ProductGrid({ products, onAdd }) {
