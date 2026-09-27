@@ -40,6 +40,9 @@ import UsersPage from "./pages/UsersPage";
 import Agenda from "./pages/Agenda";
 import ComingSoonGuard from "./components/ComingSoonGuard";
 
+// Compras y proveedores están terminados: a quien no los tiene se le explica por qué
+const SOLO_GERENCIA = { titulo: "Sin acceso", mensaje: "Esta sección es para gerentes y administradores." };
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
 });
@@ -140,10 +143,10 @@ function AppRoutes() {
                 <Route path="/stock-movements" element={<StockMovements />} />
                 <Route path="/remitos" element={<Remitos />} />
                 <Route path="/new-remito" element={<NewRemito />} />
-                <Route path="/purchase-orders" element={<ComingSoonGuard permiso="gestionarCompras"><PurchaseOrders /></ComingSoonGuard>} />
-                <Route path="/purchase-order-detail" element={<ComingSoonGuard permiso="gestionarCompras"><PurchaseOrderDetail /></ComingSoonGuard>} />
-                <Route path="/new-purchase-order" element={<ComingSoonGuard permiso="gestionarCompras"><NewPurchaseOrder /></ComingSoonGuard>} />
-                <Route path="/suppliers" element={<ComingSoonGuard permiso="gestionarCompras"><Suppliers /></ComingSoonGuard>} />
+                <Route path="/purchase-orders" element={<ComingSoonGuard permiso="gestionarCompras" {...SOLO_GERENCIA}><PurchaseOrders /></ComingSoonGuard>} />
+                <Route path="/purchase-order-detail" element={<ComingSoonGuard permiso="gestionarCompras" {...SOLO_GERENCIA}><PurchaseOrderDetail /></ComingSoonGuard>} />
+                <Route path="/new-purchase-order" element={<ComingSoonGuard permiso="gestionarCompras" {...SOLO_GERENCIA}><NewPurchaseOrder /></ComingSoonGuard>} />
+                <Route path="/suppliers" element={<ComingSoonGuard permiso="gestionarCompras" {...SOLO_GERENCIA}><Suppliers /></ComingSoonGuard>} />
                 <Route path="/service-types" element={<ServiceTypes />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/cash-register" element={<CashRegister />} />

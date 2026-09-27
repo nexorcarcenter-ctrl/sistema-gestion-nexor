@@ -10,7 +10,13 @@ import { Lock } from "lucide-react";
  * y módulos terminados que todavía no se le habilitan a todos. Cuál de las
  * dos aplica lo decide el permiso que se le pase.
  */
-export default function ComingSoonGuard({ children, permiso = "verModulosEnConstruccion" }) {
+export default function ComingSoonGuard({
+  children,
+  permiso = "verModulosEnConstruccion",
+  // Un módulo ya terminado que un rol no tiene habilitado no es "próximamente"
+  titulo = "Próximamente",
+  mensaje = "Esta sección estará disponible pronto.",
+}) {
   const [habilitado, setHabilitado] = useState(null);
 
   useEffect(() => {
@@ -32,10 +38,8 @@ export default function ComingSoonGuard({ children, permiso = "verModulosEnConst
           <div className="w-16 h-16 bg-[#0D0D0F] rounded-2xl flex items-center justify-center mx-auto mb-5">
             <Lock className="h-8 w-8 text-[#CCFF00]" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Próximamente</h2>
-          <p className="text-slate-500 text-sm">
-            Esta sección estará disponible pronto.
-          </p>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">{titulo}</h2>
+          <p className="text-slate-500 text-sm">{mensaje}</p>
         </div>
       </div>
     </div>
