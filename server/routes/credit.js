@@ -14,74 +14,27 @@ const permisos = require("../permissions");
  * cobros por transferencia o tarjeta no necesitan caja.
  */
 
+const {
+  redondear, hoy, fallar, enTransaccion: transaccion, datosUsuario, siguienteNumeroVenta,
+  leerItems, descontarStock, leerMedioDePago, cajaAbierta,
+} = require("../lib/ventas");
+
 const PLAZO_MAXIMO = 365;
-const redondear = (n) => Math.round((Number(n) || 0) * 100) / 100;
-
-function fallar(status, mensaje, extra) {
-  const err = new Error(mensaje);
-  err.status = status;
-  err.extra = extra;
-  throw err;
-}
-
-async function enTransaccion(res, fn) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const r = await fn(client);
-    await client.query("COMMIT");
-    return r;
-  } catch (err) {
-    await client.query("ROLLBACK");
-    if (!err.status) console.error("Credit error:", err);
-    res.status(err.status || 500).json({ error: err.status ? err.message : "Error al guardar", ...(err.extra || {}) });
-    return undefined;
-  } finally {
-    client.release();
-  }
-}
-
-async function datosUsuario(req) {
-  const { rows } = await pool.query("SELECT full_name FROM users WHERE id = $1", [req.user.id]);
-  return { id: String(req.user.id), nombre: rows[0]?.full_name || req.user.username || "" };
-}
-
-// Mismo criterio que sequence.js (V-000123), pero con lock: dos ventas a la
-// vez no pueden salir con el mismo numero
-async function siguienteNumeroVenta(client) {
-  await client.query("SELECT pg_advisory_xact_lock(hashtext('sale_number'))");
-  const { rows } = await client.query(`
-    SELECT COALESCE(MAX(NULLIF(regexp_replace(sale_number, '^V-', ''), '')::int), 0) AS ultimo
-    FROM sales WHERE sale_number ~ '^V-[0-9]+$'
-  `);
-  return `V-${String(Number(rows[0].ultimo) + 1).padStart(6, "0")}`;
-}
+const enTransaccion = (res, fn) => transaccion(res, fn, "Credit");
 
 /**
  * Lee un cobro y lo deja listo para guardar. Si es en efectivo exige una caja
  * abierta; si es con otro medio la caja no hace falta.
  */
 async function leerCobro(client, pago, cajaId) {
-  const monto = redondear(pago.amount);
-  if (!(monto > 0)) fallar(400, "Los montos tienen que ser mayores a cero");
-  const { rows } = await client.query(
-    "SELECT id, name, type, currency FROM payment_methods WHERE id::text = $1",
-    [String(pago.method_id || "")]
-  );
-  const metodo = rows[0];
-  if (!metodo) fallar(400, "Elegí la forma de pago");
-  const moneda = metodo.currency === "USD" ? "USD" : "UYU";
-  const tc = moneda === "USD" ? Number(pago.exchange_rate) : 1;
-  if (!(tc > 0)) fallar(400, "Poné el tipo de cambio");
-
-  let caja = null;
-  if (metodo.type === "cash") {
+  const cobro = await leerMedioDePago(client, pago);
+  cobro.caja = null;
+  if (cobro.metodo.type === "cash") {
     if (!cajaId) fallar(409, "Para cobrar en efectivo tiene que haber una caja abierta");
-    const { rows: c } = await client.query("SELECT id FROM cash_registers WHERE id::text = $1 AND status = 'open'", [String(cajaId)]);
-    if (!c[0]) fallar(409, "La caja no está abierta: abrila para cobrar en efectivo");
-    caja = String(c[0].id);
+    cobro.caja = await cajaAbierta(client, cajaId);
+    if (!cobro.caja) fallar(409, "La caja no está abierta: abrila para cobrar en efectivo");
   }
-  return { metodo, moneda, tc, monto, enPesos: redondear(monto * tc), caja };
+  return cobro;
 }
 
 async function guardarCobro(client, venta, cobro, fecha, notas, usuario) {
@@ -141,9 +94,6 @@ async function responderVenta(res, id, status = 200) {
   }
 }
 
-// Fecha de hoy en Uruguay: el servidor corre en UTC y despues de las 21 hs
-// ya seria "mañana"
-const hoy = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Montevideo" });
 const fechaValida = (f) => (/^\d{4}-\d{2}-\d{2}$/.test(f || "") ? f : null);
 
 // POST /api/credit/sales — venta directa a credito, con entrega inicial opcional
@@ -153,19 +103,8 @@ router.post("/sales", async (req, res) => {
   }
   const b = req.body || {};
   const dias = parseInt(b.credit_days, 10);
-  const items = (Array.isArray(b.items) ? b.items : []).map((i) => ({
-    product_id: i.product_id ? String(i.product_id) : "",
-    product_name: (i.product_name || "").trim(),
-    sku: i.sku || "",
-    quantity: Number(i.quantity),
-    unit_price: redondear(i.unit_price),
-  }));
   if (!b.customer_id) return res.status(400).json({ error: "Elegí el cliente" });
   if (!(dias >= 1 && dias <= PLAZO_MAXIMO)) return res.status(400).json({ error: "Elegí el plazo del crédito" });
-  if (!items.length) return res.status(400).json({ error: "Agregá al menos un producto" });
-  if (items.some((i) => !i.product_name)) return res.status(400).json({ error: "Hay un ítem sin descripción" });
-  if (items.some((i) => !Number.isInteger(i.quantity) || i.quantity <= 0)) return res.status(400).json({ error: "Las cantidades tienen que ser enteros mayores a cero" });
-  if (items.some((i) => i.unit_price < 0)) return res.status(400).json({ error: "Hay un precio negativo" });
   const usuario = await datosUsuario(req);
 
   const id = await enTransaccion(res, async (client) => {
@@ -173,7 +112,8 @@ router.post("/sales", async (req, res) => {
     const cliente = cli[0];
     if (!cliente) fallar(400, "El cliente no existe");
 
-    const total = redondear(items.reduce((s, i) => s + i.quantity * i.unit_price, 0));
+    const lineas = leerItems(b.items);
+    const total = redondear(lineas.reduce((s, i) => s + i.total, 0));
     const entregas = [];
     for (const p of (Array.isArray(b.pagos) ? b.pagos : [])) entregas.push(await leerCobro(client, p, b.cash_register_id));
     const entregado = redondear(entregas.reduce((s, e) => s + e.enPesos, 0));
@@ -181,7 +121,6 @@ router.post("/sales", async (req, res) => {
     if (entregado > total + 0.009) fallar(400, "La entrega supera el total de la venta");
 
     const numero = await siguienteNumeroVenta(client);
-    const lineas = items.map((i) => ({ ...i, total: redondear(i.quantity * i.unit_price) }));
     const { rows: [venta] } = await client.query(
       `INSERT INTO sales (sale_number, sale_date, sale_type, customer_id, customer_name, customer_phone, vehicle,
          items_json, items_count, total, subtotal, payment_type, credit_days, due_date, paid_amount,
@@ -193,21 +132,7 @@ router.post("/sales", async (req, res) => {
        JSON.stringify(lineas), lineas.length, total, dias, b.cash_register_id || null, (b.notes || "").trim() || null, usuario.nombre, hoy()]
     );
 
-    // Stock: mismo registro que deja routes/stock.js
-    for (const i of lineas.filter((l) => l.product_id)) {
-      const { rows: pr } = await client.query("SELECT id, name, sku, stock_quantity FROM products WHERE id::text = $1 FOR UPDATE", [i.product_id]);
-      const p = pr[0];
-      if (!p) fallar(400, `El producto ${i.product_name} ya no existe`);
-      const anterior = Number(p.stock_quantity) || 0;
-      const nuevo = Math.max(0, anterior - i.quantity);
-      await client.query("UPDATE products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2", [nuevo, p.id]);
-      await client.query(
-        `INSERT INTO stock_movements (product_id, product_name, sku, movement_type, quantity, previous_stock, new_stock,
-           reference_type, reference_number, reason, created_at, updated_at)
-         VALUES ($1,$2,$3,'sale',$4,$5,$6,'sale',$7,$8,NOW(),NOW())`,
-        [p.id, p.name, p.sku || "", nuevo - anterior, anterior, nuevo, numero, `Venta a crédito a ${cliente.name}`]
-      );
-    }
+    await descontarStock(client, lineas, numero, `Venta a crédito a ${cliente.name}`);
 
     for (const e of entregas) await guardarCobro(client, venta, e, hoy(), "Entrega inicial", usuario);
     await actualizarEstadoVenta(client, venta.id);

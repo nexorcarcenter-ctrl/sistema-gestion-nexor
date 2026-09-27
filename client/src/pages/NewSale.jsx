@@ -5,8 +5,6 @@ import { Sale } from "@/entities/Sale";
 import { Product } from "@/entities/Product";
 import { PaymentMethod } from "@/entities/PaymentMethod";
 import { CashRegister } from "@/entities/CashRegister";
-import { StockMovement } from "@/entities/StockMovement";
-import { getSequence } from "@/entities/base";
 import { Customer, Credito } from "@/entities/Customer";
 import { puede, rolDelToken } from "@/permissions";
 import ClienteForm from "../components/ClienteForm";
@@ -218,63 +216,24 @@ export default function NewSale() {
     if (!canSave) return;
     if (esCredito) return guardarACredito();
     setSaving(true);
-
-    const saleNumber = await getSequence("sale");
-    const paymentsJson = payments.map(p => ({
-      ...p,
-      amount_uyu: p.currency === "USD" ? p.amount * (parseFloat(exchangeRate) || 40) : p.amount,
-      exchange_rate: p.currency === "USD" ? parseFloat(exchangeRate) || 40 : 1,
-    }));
-
-    await Sale.create({
-      sale_number: saleNumber,
-      sale_date: new Date().toISOString(),
-      sale_type: "direct",
-      customer_name: customerName || "",
-      customer_phone: customerPhone || "",
-      vehicle: vehicle || "",
-      items_json: JSON.stringify(cartItems),
-      items_count: cartItems.length,
-      payments_json: JSON.stringify(paymentsJson),
-      total_uyu: totalPaidUYU,
-      total_usd: totalUSD,
-      total: subtotal,
-      subtotal,
-      payment_status: "paid",
-      status: "completed",
-      cash_register_id: cashRegister?.id || "",
-      notes,
-    });
-
-    // Update stock for each product (atomic server-side)
-    const stockMovements = cartItems
-      .filter(item => item.product_id)
-      .map(item => ({
-        product_id: item.product_id,
-        movement_type: "sale",
-        quantity: -item.quantity,
-        reference_type: "sale",
-        reference_number: saleNumber,
-        reason: "Venta directa",
-      }));
-    if (stockMovements.length > 0) {
-      await StockMovement.moveBulk(stockMovements);
-    }
-
-    // Update cash register
-    if (cashRegister) {
-      const uyuTotal = payments.filter(p => p.currency === "UYU").reduce((s, p) => s + p.amount, 0);
-      const usdTotal = payments.filter(p => p.currency === "USD").reduce((s, p) => s + p.amount, 0);
-      const usdInUYU = usdTotal * (parseFloat(exchangeRate) || 40);
-      await CashRegister.update(cashRegister.id, {
-        total_uyu: (cashRegister.total_uyu || 0) + uyuTotal + usdInUYU,
-        total_usd: (cashRegister.total_usd || 0) + usdTotal,
+    setError(null);
+    try {
+      await Sale.registrarContado({
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        vehicle,
+        notes,
+        items: cartItems.map(i => ({ product_id: i.product_id, product_name: i.product_name, sku: i.sku, quantity: i.quantity, unit_price: i.unit_price })),
+        pagos: payments.map(p => ({ method_id: p.method_id, amount: p.amount, exchange_rate: p.currency === "USD" ? parseFloat(exchangeRate) || 0 : 1 })),
+        cash_register_id: cashRegister?.id,
       });
+      setSaved(true);
+      setTimeout(() => navigate(createPageUrl("Sales")), 1200);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => navigate(createPageUrl("Sales")), 1200);
   };
 
   const uyuMethods = paymentMethods.filter(m => m.currency === "UYU");

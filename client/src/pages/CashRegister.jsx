@@ -72,7 +72,9 @@ function calcMovementTotals(movements) {
   }, { ingresoUYU: 0, egresoUYU: 0, ingresoUSD: 0, egresoUSD: 0 });
 }
 
-// Fórmula: fondo + TODOS los pagos recibidos + ingresos manuales - egresos manuales
+// Lo que tiene que haber en el cajón: fondo + efectivo recibido + ingresos
+// manuales - egresos manuales. Las tarjetas y transferencias se muestran como
+// referencia pero no suman: esa plata no está en la caja.
 function calcExpected(register, payments, movements) {
   const methodList = buildMethodList(payments);
   // Total de todos los métodos por moneda (no solo efectivo)
@@ -91,8 +93,8 @@ function calcExpected(register, payments, movements) {
     egresoUYU,
     ingresoUSD,
     egresoUSD,
-    expectedCashUYU: (register.petty_cash_uyu || 0) + allUYU + ingresoUYU - egresoUYU,
-    expectedCashUSD: (register.petty_cash_usd || 0) + allUSD + ingresoUSD - egresoUSD,
+    expectedCashUYU: (register.petty_cash_uyu || 0) + cashUYU + ingresoUYU - egresoUYU,
+    expectedCashUSD: (register.petty_cash_usd || 0) + cashUSD + ingresoUSD - egresoUSD,
   };
 }
 
@@ -235,7 +237,9 @@ function PaymentRow({ payment }) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-800">{payment.car_plate || "—"}</span>
+              <span className="text-sm font-medium text-slate-800">
+                {payment.car_plate || (payment.sale_id ? (payment.payment_method_name === "Vuelto" ? "Vuelto" : payment.notes === "Venta directa" ? "Venta directa" : "Cobro de venta a crédito") : "—")}
+              </span>
               <span className="text-xs text-slate-400">{payment.customer_name}</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">

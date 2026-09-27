@@ -69,7 +69,7 @@ router.use("/:entity/:id?", async (req, res, next) => {
     try {
       const { rows } = await pool.query("SELECT sale_id FROM payments WHERE id::text = $1", [req.params.id]);
       if (rows[0]?.sale_id) {
-        return res.status(409).json({ error: "Este cobro es de una venta a crédito: se maneja desde Cuentas a cobrar" });
+        return res.status(409).json({ error: "Este pago es de una venta: no se modifica suelto" });
       }
     } catch (err) {
       return res.status(500).json({ error: err.message });
